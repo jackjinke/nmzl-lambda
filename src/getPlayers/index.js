@@ -1,4 +1,4 @@
-const dynamodbHelper = require('dynamodb-helper');
+const dynamodbHelper = require('src/common/dynamodb-helper');
 const steamHelper = require('steam-helper');
 const signatureHeroesHelper = require('signature-heroes-helper');
 
@@ -13,10 +13,10 @@ exports.handler = (event, context, callback) => {
 
         // No valid cache found
         console.log('No valid cache found, generating new response');
-        let allPlayerDetailsPromise = dynamodbHelper.getPlayersInfo().then((response) => {
-            console.log('Got player details');
+        let allPlayerDetailsPromise = dynamodbHelper.getPlayersInfo().then((responses) => {
+            console.log('Got player info');
             let playerDetailPromises = [];
-            response.forEach(playerInfo => {
+            responses.forEach(playerInfo => {
                 playerDetailPromises.push(getPlayersDetail(playerInfo));
             });
             return Promise.all(playerDetailPromises);
@@ -44,7 +44,7 @@ exports.handler = (event, context, callback) => {
             });
             return playerInfo;
         });
-        console.log('Added hero img links, calling back with final response object: ' + JSON.stringify(playerDetails));
+        console.log('Added hero img links, putting cache and calling back with final response object: ' + JSON.stringify(playerDetails));
 
         // No Promise's finally() support in Node.js yet
         dynamodbHelper.putCache(playerDetails).then(() => {
@@ -63,15 +63,11 @@ function getPlayersDetail(playerInfo) {
         let playersDetail = {
             player_name: playerInfo.PLAYER_NAME.S
         };
-        let steamIdList = playerInfo.STEAM_ID_LIST.L.map((steamIdObject) => {
-            return steamIdObject.N;
-        });
+        let steamIdList = playerInfo.STEAM_ID_LIST.L.map((steamIdObject) => steamIdObject.N);
 
         steamHelper.getSteamListDetail(steamIdList).then(steamIdDetails => {
             playersDetail.steam_accounts = steamIdDetails;
-            return signatureHeroesHelper.getSignatureHeroes(steamIdDetails.map(steamIdDetail => {
-                return steamIdDetail.steam_id;
-            }));
+            return signatureHeroesHelper.getSignatureHeroes(steamIdDetails.map(steamIdDetail => steamIdDetail.steam_id));
         }).then(sigHeroes => {
             playersDetail.signature_heroes = sigHeroes;
             resolve(playersDetail);

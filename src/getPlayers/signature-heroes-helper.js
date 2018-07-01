@@ -20,7 +20,7 @@ function getSignatureHeroes(steamIds) {
             recentMatches.sort(function (a, b) {
                 return b.match_id - a.match_id;
             });
-            recentMatches = recentMatches.slice(0, process.env['MATCH_LIMIT']);
+            recentMatches = recentMatches.slice(0, parseInt(process.env['MATCH_LIMIT']));
 
             // Get hero data from recent matches
             let heroData = [];
@@ -41,7 +41,7 @@ function getSignatureHeroes(steamIds) {
                 }
             });
             heroData.forEach(function (hero) {
-                if (hero.games < process.env['HERO_COUNT_THRESHOLD']) {
+                if (hero.games < parseInt(process.env['HERO_COUNT_THRESHOLD'])) {
                     hero.win_rate = 0;
                 }
                 else {
