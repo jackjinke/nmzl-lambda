@@ -1,0 +1,96 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: NMZL website's lambda functions
+Parameters:
+  SteamApiKey:
+    NoEcho: true
+    Type: String
+    Description: >-
+      Secret. Go to https://steamcommunity.com/dev/apikey
+  OpenDotaApiKey:
+    NoEcho: true
+    Type: String
+    Description: >-
+      Secret. Go to https://www.opendota.com/api-keys
+  GetPlayersLambdaCacheTTL:
+    Type: Number
+    Description: Cache TTL for GetPlayers Lambda function
+    Default: 120
+  GetPlayersLambdaSignatureHeroCountThreshold:
+    Type: Number
+    Description: Hero count threshold for calculating signature hero in GetPlayers Lambda function
+    Default: 3
+  GetPlayersLambdaSignatureHeroMatchLimit:
+    Type: Number
+    Description: Match limit for calculating signature hero in GetPlayers Lambda function
+    Default: 150
+  GetBattleCupMatchesLambdaCacheTTL:
+    Type: Number
+    Description: Cache TTL for GetBattleCupMatches Lambda function
+    Default: 120
+  GetBattleCupMatchesLambdaTeamPlayerCountThreshold:
+    Type: Number
+    Description: Team player count threshold to mark a matches as a valid Battle Cup match in GetBattleCupMatches Lambda function
+    Default: 3
+
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Label:
+          default: Dota API Keys
+        Parameters:
+          - SteamApiKey
+          - OpenDotaApiKey
+      - Label:
+          default: GetPlayers Lambda Configuration
+        Parameters:
+          - GetPlayersLambdaCacheTTL
+          - GetPlayersLambdaSignatureHeroCountThreshold
+          - GetPlayersLambdaSignatureHeroMatchLimit
+      - Label:
+          default: GetBattleCupMatches Lambda Configuration
+        Parameters:
+          - GetBattleCupMatchesLambdaCacheTTL
+          - GetBattleCupMatchesLambdaTeamPlayerCountThreshold
+    ParameterLabels:
+      SteamApiKey:
+        default: Steam API Key
+      OpenDotaApiKey:
+        default: OpenDota API Key
+      GetPlayersLambdaCacheTTL:
+        default: Cache TTL for GetPlayers Lambda function
+      GetPlayersLambdaSignatureHeroCountThreshold:
+        default: Hero count threshold for calculating signature hero in GetPlayers Lambda function
+      GetPlayersLambdaSignatureHeroMatchLimit:
+        default: Match limit for calculating signature hero in GetPlayers Lambda function
+      GetBattleCupMatchesLambdaCacheTTL:
+        default: Cache TTL for GetBattleCupMatches Lambda function
+      GetBattleCupMatchesLambdaTeamPlayerCountThreshold:
+        default: Team player count threshold to mark a matches as a valid Battle Cup match in GetBattleCupMatches Lambda function
+
+Resources:
+  GetPlayersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: 'get-players.handler'
+      Runtime: nodejs8.10
+      Environment:
+        Variables:
+          API_RESPONSE_CACHE_KEY: 'GetPlayers'
+          CACHE_TTL: GetPlayersLambdaCacheTTL
+          HERO_COUNT_THRESHOLD: GetPlayersLambdaSignatureHeroCountThreshold
+          MATCH_LIMIT: GetPlayersLambdaSignatureHeroMatchLimit
+          STEAM_API_KEY: SteamApiKey
+          OPENDOTA_API_KEY: OpenDotaApiKey
+
+  GetBattleCupMatchesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: 'get-battle-cup-matches.handler'
+      Runtime: nodejs8.10
+      Environment:
+        Variables:
+          API_RESPONSE_CACHE_KEY: 'GetBattleCupMatches'
+          CACHE_TTL: GetBattleCupMatchesLambdaCacheTTL
+          BATTLE_CUP_TEAM_PLAYER_COUNT_THRESHOLD: GetBattleCupMatchesLambdaTeamPlayerCountThreshold
+          OPENDOTA_API_KEY: OpenDotaApiKey
