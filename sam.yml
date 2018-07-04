@@ -7,11 +7,13 @@ Parameters:
     Type: String
     Description: >-
       Secret. Go to https://steamcommunity.com/dev/apikey
+    Default: ''
   OpenDotaApiKey:
     NoEcho: true
     Type: String
     Description: >-
       Secret. Go to https://www.opendota.com/api-keys
+    Default: ''
   GetPlayersLambdaCacheTTL:
     Type: Number
     Description: Cache TTL for GetPlayers Lambda function
@@ -77,11 +79,11 @@ Resources:
       Environment:
         Variables:
           API_RESPONSE_CACHE_KEY: 'GetPlayers'
-          CACHE_TTL: GetPlayersLambdaCacheTTL
-          HERO_COUNT_THRESHOLD: GetPlayersLambdaSignatureHeroCountThreshold
-          MATCH_LIMIT: GetPlayersLambdaSignatureHeroMatchLimit
-          STEAM_API_KEY: SteamApiKey
-          OPENDOTA_API_KEY: OpenDotaApiKey
+          CACHE_TTL: !Ref GetPlayersLambdaCacheTTL
+          HERO_COUNT_THRESHOLD: !Ref GetPlayersLambdaSignatureHeroCountThreshold
+          MATCH_LIMIT: !Ref GetPlayersLambdaSignatureHeroMatchLimit
+          STEAM_API_KEY: !Ref SteamApiKey
+          OPENDOTA_API_KEY: !Ref OpenDotaApiKey
 
   GetBattleCupMatchesFunction:
     Type: AWS::Serverless::Function
@@ -91,6 +93,6 @@ Resources:
       Environment:
         Variables:
           API_RESPONSE_CACHE_KEY: 'GetBattleCupMatches'
-          CACHE_TTL: GetBattleCupMatchesLambdaCacheTTL
-          BATTLE_CUP_TEAM_PLAYER_COUNT_THRESHOLD: GetBattleCupMatchesLambdaTeamPlayerCountThreshold
-          OPENDOTA_API_KEY: OpenDotaApiKey
+          CACHE_TTL: !Ref GetBattleCupMatchesLambdaCacheTTL
+          BATTLE_CUP_TEAM_PLAYER_COUNT_THRESHOLD: !Ref GetBattleCupMatchesLambdaTeamPlayerCountThreshold
+          OPENDOTA_API_KEY: !Ref OpenDotaApiKey

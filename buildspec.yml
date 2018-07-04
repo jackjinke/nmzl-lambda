@@ -1,6 +1,6 @@
 version: 0.2
 phases:
-  install:
+  build:
     commands:
       - mv src/**/* ./
       - aws cloudformation package --template-file sam.yml --s3-bucket aws-nmzl-lambda-transform
