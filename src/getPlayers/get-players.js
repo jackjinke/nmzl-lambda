@@ -1,4 +1,5 @@
-const dynamodbHelper = require('src/common/dynamodb-helper');
+const dynamodbHelper = require('dynamodb-helper');
+const responseHelper = require('response-helper');
 const steamHelper = require('steam-helper');
 const signatureHeroesHelper = require('signature-heroes-helper');
 
@@ -7,7 +8,7 @@ exports.handler = (event, context, callback) => {
         // Found valid cache
         if (response) {
             console.log('Found valid response cache, returning cache: ' + response);
-            callback(null, JSON.parse(response));
+            responseHelper.returnSuccess(JSON.parse(response), callback);
             return;
         }
 
@@ -48,13 +49,13 @@ exports.handler = (event, context, callback) => {
 
         // No Promise's finally() support in Node.js yet
         dynamodbHelper.putCache(playerDetails).then(() => {
-            callback(null, playerDetails);
+            responseHelper.returnSuccess(playerDetails, callback);
         }).catch((e) => {
             console.warn(e);
-            callback(null, playerDetails);
+            responseHelper.returnSuccess(playerDetails, callback);
         });
     }).catch((error) => {
-        callback(error);
+        responseHelper.returnError(error, callback);
     });
 };
 

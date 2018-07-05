@@ -1,0 +1,164 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: NMZL website's lambda functions
+Parameters:
+  SteamApiKey:
+    NoEcho: true
+    Type: String
+  OpenDotaApiKey:
+    NoEcho: true
+    Type: String
+  GetPlayersLambdaCacheTTL:
+    Type: Number
+    Default: 120
+  GetPlayersLambdaSignatureHeroCountThreshold:
+    Type: Number
+    Default: 3
+  GetPlayersLambdaSignatureHeroMatchLimit:
+    Type: Number
+    Default: 150
+  GetBattleCupMatchesLambdaCacheTTL:
+    Type: Number
+    Default: 120
+  GetBattleCupMatchesLambdaTeamPlayerCountThreshold:
+    Type: Number
+    Default: 3
+
+Globals:
+  Function:
+    Runtime: nodejs8.10
+  Api:
+    Cors:
+      AllowMethods: "'*'"
+      AllowHeaders: "'*'"
+      AllowOrigin: "'https://nmzl.us'"
+
+Resources:
+  ########## GetPlayers ##########
+  GetPlayersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: 'get-players.handler'
+      Role:
+        Fn::GetAtt:
+        - GetPlayersLambdaExecutionRole
+        - Arn
+      Timeout: 10
+      Environment:
+        Variables:
+          API_RESPONSE_CACHE_KEY: 'GetPlayers'
+          CACHE_TTL: !Ref GetPlayersLambdaCacheTTL
+          HERO_COUNT_THRESHOLD: !Ref GetPlayersLambdaSignatureHeroCountThreshold
+          MATCH_LIMIT: !Ref GetPlayersLambdaSignatureHeroMatchLimit
+          STEAM_API_KEY: !Ref SteamApiKey
+          OPENDOTA_API_KEY: !Ref OpenDotaApiKey
+      Events:
+        GetResource:
+          Type: Api
+          Properties:
+            Path: /players
+            Method: get
+
+  GetPlayersLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Action:
+          - sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  GetPlayersLambdaDynamoDBAccessPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: GetPlayersLambdaDynamoDBAccessPolicy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Action:
+          - 'dynamodb:Scan'
+          Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/NMZL_US_PLAYERS'
+        - Effect: Allow
+          Action:
+          - 'dynamodb:PutItem'
+          - 'dynamodb:GetItem'
+          Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/NMZL_US_API_CACHE'
+        - Effect: Allow
+          Action:
+          - 'dynamodb:BatchGetItem'
+          Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/DOTA2_HERO_INFO'
+      Roles:
+      - !Ref GetPlayersLambdaExecutionRole
+
+  ########## GetBattleCupMatches ##########
+  GetBattleCupMatchesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: 'get-battle-cup-matches.handler'
+      Role:
+        Fn::GetAtt:
+        - GetBattleCupMatchesLambdaExecutionRole
+        - Arn
+      Timeout: 15
+      Environment:
+        Variables:
+          API_RESPONSE_CACHE_KEY: 'GetBattleCupMatches'
+          CACHE_TTL: !Ref GetBattleCupMatchesLambdaCacheTTL
+          BATTLE_CUP_TEAM_PLAYER_COUNT_THRESHOLD: !Ref GetBattleCupMatchesLambdaTeamPlayerCountThreshold
+          OPENDOTA_API_KEY: !Ref OpenDotaApiKey
+      Events:
+        GetResource:
+          Type: Api
+          Properties:
+            Path: /matches
+            Method: get
+
+  GetBattleCupMatchesLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Action:
+          - sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  GetBattleCupMatchesLambdaDynamoDBAccessPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: GetBattleCupMatchesLambdaDynamoDBAccessPolicy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Action:
+          - 'dynamodb:Scan'
+          Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/NMZL_US_PLAYERS'
+        - Effect: Allow
+          Action:
+          - 'dynamodb:PutItem'
+          - 'dynamodb:GetItem'
+          Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/NMZL_US_API_CACHE'
+        - Effect: Allow
+          Action:
+          - 'dynamodb:BatchGetItem'
+          Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/DOTA2_HERO_INFO'
+        - Effect: Allow
+          Action:
+          - 'dynamodb:BatchGetItem'
+          - 'dynamodb:BatchWriteItem'
+          Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/NMZL_US_MATCHES'
+      Roles:
+      - !Ref GetBattleCupMatchesLambdaExecutionRole

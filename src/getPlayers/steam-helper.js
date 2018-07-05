@@ -1,6 +1,6 @@
 const steamApiKey = process.env['STEAM_API_KEY'];
 const steamApiUrl = 'https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=' + steamApiKey;
-const big = require('src/vendor/big');
+const big = require('big');
 const https = require('https');
 
 module.exports = {getSteamListDetail};
