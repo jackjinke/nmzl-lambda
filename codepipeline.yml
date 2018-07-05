@@ -35,6 +35,39 @@ Parameters:
     Type: String
     Default: 'aws/codebuild/ubuntu-base:14.04'
     Description: The build image to use for building the app
+
+  SteamApiKey:
+    NoEcho: true
+    Type: String
+    Description: >-
+      Secret. Go to https://steamcommunity.com/dev/apikey
+    Default: ''
+  OpenDotaApiKey:
+    NoEcho: true
+    Type: String
+    Description: >-
+      Secret. Go to https://www.opendota.com/api-keys
+    Default: ''
+  GetPlayersLambdaCacheTTL:
+    Type: Number
+    Description: Cache TTL for GetPlayers Lambda function
+    Default: 120
+  GetPlayersLambdaSignatureHeroCountThreshold:
+    Type: Number
+    Description: Hero count threshold for calculating signature hero in GetPlayers Lambda function
+    Default: 3
+  GetPlayersLambdaSignatureHeroMatchLimit:
+    Type: Number
+    Description: Match limit for calculating signature hero in GetPlayers Lambda function
+    Default: 150
+  GetBattleCupMatchesLambdaCacheTTL:
+    Type: Number
+    Description: Cache TTL for GetBattleCupMatches Lambda function
+    Default: 120
+  GetBattleCupMatchesLambdaTeamPlayerCountThreshold:
+    Type: Number
+    Description: Team player count threshold to mark a matches as a valid Battle Cup match in GetBattleCupMatches Lambda function
+    Default: 3
 Metadata:
   'AWS::CloudFormation::Interface':
     ParameterGroups:
@@ -55,6 +88,22 @@ Metadata:
           - BuildType
           - BuildComputeType
           - BuildImage
+      - Label:
+          default: Dota APIs Configuration
+        Parameters:
+          - SteamApiKey
+          - OpenDotaApiKey
+      - Label:
+          default: GetPlayers Configuration
+        Parameters:
+          - GetPlayersLambdaCacheTTL
+          - GetPlayersLambdaSignatureHeroCountThreshold
+          - GetPlayersLambdaSignatureHeroMatchLimit
+      - Label:
+          default: GetBattleCupMatches Configuration
+        Parameters:
+          - GetBattleCupMatchesLambdaCacheTTL
+          - GetBattleCupMatchesLambdaTeamPlayerCountThreshold
     ParameterLabels:
       GitHubToken:
         default: GitHub OAuth2 Token
@@ -70,6 +119,20 @@ Metadata:
         default: CodeBuild instance type
       BuildImage:
         default: CodeBuild image
+      SteamApiKey:
+        default: Steam API Key
+      OpenDotaApiKey:
+        default: OpenDota API Key
+      GetPlayersLambdaCacheTTL:
+        default: Cache TTL for GetPlayers Lambda function
+      GetPlayersLambdaSignatureHeroCountThreshold:
+        default: Hero count threshold for calculating signature hero in GetPlayers Lambda function
+      GetPlayersLambdaSignatureHeroMatchLimit:
+        default: Match limit for calculating signature hero in GetPlayers Lambda function
+      GetBattleCupMatchesLambdaCacheTTL:
+        default: Cache TTL for GetBattleCupMatches Lambda function
+      GetBattleCupMatchesLambdaTeamPlayerCountThreshold:
+        default: Team player count threshold to mark a matches as a valid Battle Cup match in GetBattleCupMatches Lambda function
 
 Resources:
   TransformBucket:
@@ -223,9 +286,19 @@ Resources:
               Configuration:
                 ActionMode: CHANGE_SET_REPLACE
                 Capabilities: CAPABILITY_IAM
-                StackName: 'nmzl-lambda'
-                ChangeSetName: 'nmzl-lambda-changeset'
+                StackName: 'nmzl-lambda-deploy'
+                ChangeSetName: 'nmzl-lambda-deploy-changeset'
                 TemplatePath: PackagingOutput::outputSam.yml
+                ParameterOverrides: !Sub |
+                  {
+                    "SteamApiKey" : "${SteamApiKey}",
+                    "OpenDotaApiKey" : "${OpenDotaApiKey}",
+                    "GetPlayersLambdaCacheTTL" : "${GetPlayersLambdaCacheTTL}",
+                    "GetPlayersLambdaSignatureHeroCountThreshold" : "${GetPlayersLambdaSignatureHeroCountThreshold}",
+                    "GetPlayersLambdaSignatureHeroMatchLimit" : "${GetPlayersLambdaSignatureHeroMatchLimit}",
+                    "GetBattleCupMatchesLambdaCacheTTL" : "${GetBattleCupMatchesLambdaCacheTTL}",
+                    "GetBattleCupMatchesLambdaTeamPlayerCountThreshold" : "${GetBattleCupMatchesLambdaTeamPlayerCountThreshold}"
+                  }
                 RoleArn: !GetAtt
                 - CloudFormationRole
                 - Arn
@@ -239,8 +312,8 @@ Resources:
               Configuration:
                 ActionMode: CHANGE_SET_EXECUTE
                 Capabilities: CAPABILITY_IAM
-                StackName: 'nmzl-lambda'
-                ChangeSetName: 'nmzl-lambda-changeset'
+                StackName: 'nmzl-lambda-deploy'
+                ChangeSetName: 'nmzl-lambda-deploy-changeset'
               RunOrder: 2
       ArtifactStore:
         Type: S3

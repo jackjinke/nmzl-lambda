@@ -1,12 +1,13 @@
 const dynamodbHelper = require('dynamodb-helper');
 const matchesHelper = require('matches-helper');
+const responseHelper = require('response-helper');
 
 exports.handler = (event, context, callback) => {
     dynamodbHelper.getCache().then((response) => {
         // Found valid cache
         if (response) {
             console.log('Found valid response cache, returning cache: ' + response);
-            callback(null, JSON.parse(response));
+            responseHelper.returnSuccess(JSON.parse(response), callback);
             return;
         }
 
@@ -57,13 +58,13 @@ exports.handler = (event, context, callback) => {
 
         console.log('Got all battle cup match details, putting cache and calling back with response: ' + JSON.stringify(matchesListWithImg));
         dynamodbHelper.putCache(matchesListWithImg).then(() => {
-            callback(null, matchesListWithImg);
+            responseHelper.returnSuccess(matchesListWithImg, callback);
         }).catch((e) => {
             console.warn(e);
-            callback(null, matchesListWithImg);
+            responseHelper.returnSuccess(matchesListWithImg, callback);
         });
     }).catch((error) => {
-        callback(error)
+        responseHelper.returnError(error, callback);
     });
 };
 
