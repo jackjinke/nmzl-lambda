@@ -3,7 +3,7 @@ const matchesHelper = require('matches-helper');
 const responseHelper = require('response-helper');
 
 exports.handler = (event, context, callback) => {
-    dynamodbHelper.getCache().then((response) => {
+    dynamodbHelper.ApiCache.getCache().then((response) => {
         // Found valid cache
         if (response) {
             console.log('Found valid response cache, returning cache: ' + response);
@@ -13,7 +13,7 @@ exports.handler = (event, context, callback) => {
 
         // No valid cache found
         console.log('No valid cache found, generating new response');
-        return dynamodbHelper.getPlayersInfo();
+        return dynamodbHelper.Players.getPlayersInfo();
     }).then((responses) => {
         console.log('Got player info');
         let steamIdList = [];
@@ -38,7 +38,7 @@ exports.handler = (event, context, callback) => {
                     }
                 });
             });
-            return dynamodbHelper.getHeroMetadata(heroIdList, ['img']);
+            return dynamodbHelper.HeroMetadata.getHeroMetadata(heroIdList, ['img']);
         });
         return Promise.all([matchesListPromise, heroMetadataPromise]);
     }).then(([matchesList, heroMetadata]) => {
@@ -56,7 +56,7 @@ exports.handler = (event, context, callback) => {
         });
 
         console.log('Got all battle cup match details, putting cache and calling back with response: ' + JSON.stringify(matchesListWithImg));
-        dynamodbHelper.putCache(matchesListWithImg).then(() => {
+        dynamodbHelper.ApiCache.putCache(matchesListWithImg).then(() => {
             responseHelper.returnSuccess(matchesListWithImg, callback);
         }).catch((e) => {
             console.warn(e);

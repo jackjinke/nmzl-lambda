@@ -4,7 +4,7 @@ const steamHelper = require('steam-helper');
 const signatureHeroesHelper = require('signature-heroes-helper');
 
 exports.handler = (event, context, callback) => {
-    dynamodbHelper.getCache().then((response) => {
+    dynamodbHelper.ApiCache.getCache().then((response) => {
         // Found valid cache
         if (response) {
             console.log('Found valid response cache, returning cache: ' + response);
@@ -14,7 +14,7 @@ exports.handler = (event, context, callback) => {
 
         // No valid cache found
         console.log('No valid cache found, generating new response');
-        let playerDetailsPromise = dynamodbHelper.getPlayersInfo().then((responses) => {
+        let playerDetailsPromise = dynamodbHelper.Players.getPlayersInfo().then((responses) => {
             console.log('Got player info');
             let playerDetailPromises = [];
             responses.forEach(playerInfo => {
@@ -33,7 +33,7 @@ exports.handler = (event, context, callback) => {
                     }
                 });
             });
-            return dynamodbHelper.getHeroMetadata(heroIdList, ['img']);
+            return dynamodbHelper.HeroMetadata.getHeroMetadata(heroIdList, ['img']);
         });
         return Promise.all([playerDetailsPromise, heroMetadataPromise])
     }).then(([playerDetails, heroMetadata]) => {
@@ -47,7 +47,7 @@ exports.handler = (event, context, callback) => {
         console.log('Added hero img links, putting cache and calling back with final response object: ' + JSON.stringify(playerDetails));
 
         // No Promise's finally() support in Node.js yet
-        dynamodbHelper.putCache(playerDetails).then(() => {
+        dynamodbHelper.ApiCache.putCache(playerDetails).then(() => {
             responseHelper.returnSuccess(playerDetails, callback);
         }).catch((e) => {
             console.warn(e);

@@ -98,8 +98,8 @@ function getRawMatchesFromSteamId(steamId) {
 function getMatchDetails(matchList) {
     return new Promise((resolve, reject) => {
         let matchIdList = matchList.map((match) => match.match_id);
-        dynamodbHelper.getMatchDetails(matchIdList).then((responses) => {
-            console.log('Got response from DynamoDB BatchGet')
+        dynamodbHelper.Matches.getMatchDetails(matchIdList).then((responses) => {
+            console.log('Got response from DynamoDB BatchGet');
             console.log(JSON.stringify(responses));
             let matchesFromDynamoDB = [];
             let promises = [];
@@ -117,7 +117,7 @@ function getMatchDetails(matchList) {
                 if (matchesFromOpenDota.length > 0) {
                     // Record these new match details to DynamoDB
                     console.log('Putting responses from OpenDota into DynamoDB');
-                    dynamodbHelper.putMatchDetails(matchesFromOpenDota).catch((error) => {
+                    dynamodbHelper.Matches.putMatchDetails(matchesFromOpenDota).catch((error) => {
                         console.warn('Unable to put matches data into DynamoDB, error: ' + error);
                     });
                 }

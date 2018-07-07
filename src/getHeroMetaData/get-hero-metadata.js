@@ -2,7 +2,7 @@ const dynamodbHelper = require('dynamodb-helper');
 const responseHelper = require('response-helper');
 
 exports.handler = (event, context, callback) => {
-    dynamodbHelper.getCache().then((response) => {
+    dynamodbHelper.ApiCache.getCache().then((response) => {
         // Found valid cache
         if (response) {
             console.log('Found valid response cache, returning cache: ' + response);
@@ -12,9 +12,9 @@ exports.handler = (event, context, callback) => {
 
         // No valid cache found
         console.log('No valid cache found, generating new response');
-        return dynamodbHelper.getAllHeroMetadata();
+        return dynamodbHelper.HeroMetadata.getAllHeroMetadata();
     }).then((response) => {
-        dynamodbHelper.putCache(response).then(() => {
+        dynamodbHelper.ApiCache.putCache(response).then(() => {
             responseHelper.returnSuccess(response, callback);
         }).catch((e) => {
             console.warn(e);
