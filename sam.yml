@@ -23,6 +23,12 @@ Parameters:
   GetBattleCupMatchesLambdaTeamPlayerCountThreshold:
     Type: Number
     Default: 3
+  GetHeroMetadataLambdaCacheTTL:
+    Type: Number
+    Default: 3600
+  RefreshPlayersMatchesRateExpression:
+    Type: String
+    Default: 'rate(1 day)'
 
 Globals:
   Function:
@@ -162,3 +168,126 @@ Resources:
           Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/NMZL_US_MATCHES'
       Roles:
       - !Ref GetBattleCupMatchesLambdaExecutionRole
+
+  ########## GetHeroMetadata ##########
+  GetHeroMetadataFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: 'get-hero-metadata.handler'
+      Role:
+        Fn::GetAtt:
+        - GetHeroMetadataLambdaExecutionRole
+        - Arn
+      Timeout: 5
+      Environment:
+        Variables:
+          API_RESPONSE_CACHE_KEY: 'GetHeroMetadata'
+          CACHE_TTL: !Ref GetHeroMetadataLambdaCacheTTL
+      Events:
+        GetResource:
+          Type: Api
+          Properties:
+            Path: /herometadata
+            Method: get
+
+  GetHeroMetadataLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Action:
+          - sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  GetHeroMetadataLambdaDynamoDBAccessPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: GetHeroMetadataLambdaDynamoDBAccessPolicy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Action:
+          - 'dynamodb:PutItem'
+          - 'dynamodb:GetItem'
+          Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/NMZL_US_API_CACHE'
+        - Effect: Allow
+          Action:
+          - 'dynamodb:BatchGetItem'
+          - 'dynamodb:Scan'
+          Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/DOTA2_HERO_INFO'
+      Roles:
+      - !Ref GetHeroMetadataLambdaExecutionRole
+
+  ########## RefreshPlayersMatches ##########
+  RefreshPlayersMatchesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: 'refresh-players-matches.handler'
+      Role:
+        Fn::GetAtt:
+        - RefreshPlayersMatchesLambdaExecutionRole
+        - Arn
+      Timeout: 5
+      Environment:
+        Variables:
+          OPENDOTA_API_KEY: !Ref OpenDotaApiKey
+
+  RefreshPlayersMatchesLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Action:
+          - sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  RefreshPlayersMatchesLambdaDynamoDBAccessPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: RefreshPlayersMatchesLambdaDynamoDBAccessPolicy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Action:
+          - 'dynamodb:Scan'
+          Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/NMZL_US_PLAYERS'
+      Roles:
+      - !Ref RefreshPlayersMatchesLambdaExecutionRole
+
+  RefreshPlayersMatchesLambdaScheduledRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: RefreshPlayersMatchesLambdaScheduledRule
+      ScheduleExpression: !Ref RefreshPlayersMatchesRateExpression
+      State: ENABLED
+      Targets:
+      - Arn:
+          Fn::GetAtt:
+          - RefreshPlayersMatchesFunction
+          - Arn
+        Id: RefreshPlayersMatchesFunction
+
+  RefreshPlayersMatchesPermissionForEvents:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref RefreshPlayersMatchesFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn:
+        Fn::GetAtt:
+        - RefreshPlayersMatchesLambdaScheduledRule
+        - Arn

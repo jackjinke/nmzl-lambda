@@ -68,42 +68,59 @@ Parameters:
     Type: Number
     Description: Team player count threshold to mark a matches as a valid Battle Cup match in GetBattleCupMatches Lambda function
     Default: 3
+  GetHeroMetadataLambdaCacheTTL:
+    Type: Number
+    Description: Cache TTL for GetHeroMetadata Lambda function
+    Default: 3600
+  RefreshPlayersMatchesRateExpression:
+    Type: String
+    Description: Rate expression for RefreshPlayersMatches Lambda function
+    Default: 'rate(1 day)'
+
 Metadata:
   'AWS::CloudFormation::Interface':
     ParameterGroups:
       - Label:
           default: SAM Configuration
         Parameters:
-          - TransformBucketName
+        - TransformBucketName
       - Label:
           default: GitHub Configuration
         Parameters:
-          - GitHubToken
-          - GitHubUser
-          - GitHubRepo
-          - GitHubBranch
+        - GitHubToken
+        - GitHubUser
+        - GitHubRepo
+        - GitHubBranch
       - Label:
           default: Build Configuration
         Parameters:
-          - BuildType
-          - BuildComputeType
-          - BuildImage
+        - BuildType
+        - BuildComputeType
+        - BuildImage
       - Label:
           default: Dota APIs Configuration
         Parameters:
-          - SteamApiKey
-          - OpenDotaApiKey
+        - SteamApiKey
+        - OpenDotaApiKey
       - Label:
           default: GetPlayers Configuration
         Parameters:
-          - GetPlayersLambdaCacheTTL
-          - GetPlayersLambdaSignatureHeroCountThreshold
-          - GetPlayersLambdaSignatureHeroMatchLimit
+        - GetPlayersLambdaCacheTTL
+        - GetPlayersLambdaSignatureHeroCountThreshold
+        - GetPlayersLambdaSignatureHeroMatchLimit
       - Label:
           default: GetBattleCupMatches Configuration
         Parameters:
-          - GetBattleCupMatchesLambdaCacheTTL
-          - GetBattleCupMatchesLambdaTeamPlayerCountThreshold
+        - GetBattleCupMatchesLambdaCacheTTL
+        - GetBattleCupMatchesLambdaTeamPlayerCountThreshold
+      - Label:
+          default: GetHeroMetadata Configuration
+        Parameters:
+        - GetHeroMetadataLambdaCacheTTL
+      - Label:
+          default: RefreshPlayersMatches Configuration
+        Parameters:
+        - RefreshPlayersMatchesRateExpression
     ParameterLabels:
       GitHubToken:
         default: GitHub OAuth2 Token
@@ -133,6 +150,10 @@ Metadata:
         default: Cache TTL for GetBattleCupMatches Lambda function
       GetBattleCupMatchesLambdaTeamPlayerCountThreshold:
         default: Team player count threshold to mark a matches as a valid Battle Cup match in GetBattleCupMatches Lambda function
+      GetHeroMetadataLambdaCacheTTL:
+        default: Cache TTL for GetHeroMetadata Lambda function
+      RefreshPlayersMatchesRateExpression:
+        default: Rate expression for RefreshPlayersMatches Lambda function
 
 Resources:
   TransformBucket:
@@ -297,7 +318,9 @@ Resources:
                     "GetPlayersLambdaSignatureHeroCountThreshold" : "${GetPlayersLambdaSignatureHeroCountThreshold}",
                     "GetPlayersLambdaSignatureHeroMatchLimit" : "${GetPlayersLambdaSignatureHeroMatchLimit}",
                     "GetBattleCupMatchesLambdaCacheTTL" : "${GetBattleCupMatchesLambdaCacheTTL}",
-                    "GetBattleCupMatchesLambdaTeamPlayerCountThreshold" : "${GetBattleCupMatchesLambdaTeamPlayerCountThreshold}"
+                    "GetBattleCupMatchesLambdaTeamPlayerCountThreshold" : "${GetBattleCupMatchesLambdaTeamPlayerCountThreshold}",
+                    "GetHeroMetadataLambdaCacheTTL" : "${GetHeroMetadataLambdaCacheTTL}",
+                    "RefreshPlayersMatchesRateExpression" : "${RefreshPlayersMatchesRateExpression}"
                   }
                 RoleArn: !GetAtt
                 - CloudFormationRole

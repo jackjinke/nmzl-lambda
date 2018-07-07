@@ -38,9 +38,8 @@ exports.handler = (event, context, callback) => {
                     }
                 });
             });
-            return dynamodbHelper.getHeroImgs(heroIdList);
+            return dynamodbHelper.getHeroImgMap(heroIdList);
         });
-
         return Promise.all([matchesListPromise, heroImgMapPromise]);
     }).then(([matchesList, heroImgMap]) => {
         console.log('Got all hero img, adding img links into matches list');
