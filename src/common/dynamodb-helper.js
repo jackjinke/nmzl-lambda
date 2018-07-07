@@ -3,7 +3,7 @@ const aws = require('aws-sdk');
 module.exports = {
     getCache, putCache,
     getPlayersInfo,
-    getHeroImgMap, getAllHeroMetadata,
+    getHeroMetadata, getAllHeroMetadata,
     getMatchDetails, putMatchDetails
 };
 
@@ -84,22 +84,7 @@ function getPlayersInfo() {
     });
 }
 
-function getHeroImgMap(heroIdList) {
-    return new Promise((resolve, reject) => {
-        getHeroMetadata(heroIdList, 'id, img').then((response) => {
-            let imagePrefix = 'https://cdn.dota2.com';
-            let heroImgMap = {};
-            Object.keys(response).forEach((heroId) => {
-                heroImgMap[heroId] = imagePrefix + response[heroId].img.S;
-            });
-            resolve(heroImgMap);
-        }).catch((error) => {
-            reject(error);
-        });
-    });
-}
-
-function getHeroMetadata(heroIdList, projectionExpression) {
+function getHeroMetadata(heroIdList, projectionExpression = []) {
     let ddb = new aws.DynamoDB({apiVersion: '2012-08-10'});
 
     let requestMapList = heroIdList.map((heroId) => {
@@ -116,7 +101,8 @@ function getHeroMetadata(heroIdList, projectionExpression) {
             RequestItems: {
                 'DOTA2_HERO_INFO': {
                     Keys: requestMapList,
-                    ProjectionExpression: projectionExpression
+                    ProjectionExpression: projectionExpression.length === 0 ?
+                        undefined : ['id', ...projectionExpression].join(', ')
                 }
             }
         };

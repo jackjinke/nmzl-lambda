@@ -14,7 +14,7 @@ exports.handler = (event, context, callback) => {
 
         // No valid cache found
         console.log('No valid cache found, generating new response');
-        let allPlayerDetailsPromise = dynamodbHelper.getPlayersInfo().then((responses) => {
+        let playerDetailsPromise = dynamodbHelper.getPlayersInfo().then((responses) => {
             console.log('Got player info');
             let playerDetailPromises = [];
             responses.forEach(playerInfo => {
@@ -23,7 +23,7 @@ exports.handler = (event, context, callback) => {
             return Promise.all(playerDetailPromises);
         });
 
-        let allHeroImgsPromise = allPlayerDetailsPromise.then((responses) => {
+        let heroMetadataPromise = playerDetailsPromise.then((responses) => {
             console.log('Got hero img links');
             let heroIdList = [];
             responses.forEach((playerInfo) => {
@@ -33,14 +33,14 @@ exports.handler = (event, context, callback) => {
                     }
                 });
             });
-            return dynamodbHelper.getHeroImgMap(heroIdList);
+            return dynamodbHelper.getHeroMetadata(heroIdList, ['img']);
         });
-        return Promise.all([allPlayerDetailsPromise, allHeroImgsPromise])
-    }).then(([playerDetails, heroImgs]) => {
+        return Promise.all([playerDetailsPromise, heroMetadataPromise])
+    }).then(([playerDetails, heroMetadata]) => {
         console.log('Adding hero img links into player details');
         playerDetails.map((playerInfo) => {
             playerInfo.signature_heroes.forEach((signatureHero, signatureHeroIndex, signatureHeroArray) => {
-                signatureHeroArray[signatureHeroIndex].hero_img = heroImgs[signatureHero.hero_id];
+                signatureHeroArray[signatureHeroIndex].hero_img = heroMetadata[signatureHero.hero_id].img.S;
             });
             return playerInfo;
         });

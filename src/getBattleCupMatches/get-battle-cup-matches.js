@@ -23,7 +23,7 @@ exports.handler = (event, context, callback) => {
             });
         });
         let matchesListPromise = matchesHelper.getMatchesFromSteamIdList(steamIdList);
-        let heroImgMapPromise = matchesListPromise.then((responses) => {
+        let heroMetadataPromise = matchesListPromise.then((responses) => {
             console.log('Got all battle cup match details, adding hero image info');
             let heroIdList = [];
             responses.forEach((matchInfo) => {
@@ -38,18 +38,18 @@ exports.handler = (event, context, callback) => {
                     }
                 });
             });
-            return dynamodbHelper.getHeroImgMap(heroIdList);
+            return dynamodbHelper.getHeroMetadata(heroIdList, ['img']);
         });
-        return Promise.all([matchesListPromise, heroImgMapPromise]);
-    }).then(([matchesList, heroImgMap]) => {
+        return Promise.all([matchesListPromise, heroMetadataPromise]);
+    }).then(([matchesList, heroMetadata]) => {
         console.log('Got all hero img, adding img links into matches list');
         let matchesListWithImg = [];
         matchesList.forEach((matchInfo) => {
             matchInfo.radiant_lineup = matchInfo.radiant_lineup.map((heroId) => {
-                return {'hero_id': heroId, 'hero_img': heroImgMap[heroId]}
+                return {'hero_id': heroId, 'hero_img': heroMetadata[heroId].img.S}
             });
             matchInfo.dire_lineup = matchInfo.dire_lineup.map((heroId) => {
-                return {'hero_id': heroId, 'hero_img': heroImgMap[heroId]}
+                return {'hero_id': heroId, 'hero_img': heroMetadata[heroId].img.S}
             });
 
             matchesListWithImg.push(matchInfo);
