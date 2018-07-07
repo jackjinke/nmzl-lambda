@@ -155,7 +155,11 @@ function getAllHeroMetadata() {
             if (err) {
                 reject(Error('Error fetching hero metadata from DynamoDB; Error info: ' + err));
             } else {
-                resolve(data.Items);
+                let heroInfoMap = {};
+                data.Items.forEach((heroInfo) => {
+                    heroInfoMap[heroInfo.id.N] = heroInfo;
+                });
+                resolve(heroInfoMap);
             }
         });
     });
