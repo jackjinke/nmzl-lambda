@@ -80,61 +80,85 @@ module.exports = {
 
     getHeroImgs: (heroIdList) => {
         let imagePrefix = 'https://api.opendota.com';
-        return new Promise(function (resolve, reject) {
-            let ddb = new aws.DynamoDB({apiVersion: '2012-08-10'});
-            let requestMap = heroIdList.map((heroId) => {
-                return {'id': {N: heroId.toString()}}
-            });
+        let ddb = new aws.DynamoDB({apiVersion: '2012-08-10'});
+
+        let requestMapList = heroIdList.map((heroId) => {
+            return {'id': {N: heroId.toString()}}
+        });
+
+        let requestMapChuckList = [];
+        while (requestMapList.length > 0) {
+            requestMapChuckList.push(requestMapList.splice(0, 50));
+        }
+
+        let batchGetPromises = requestMapChuckList.map((requestMapList) => {
             let params = {
                 RequestItems: {
                     'DOTA2_HERO_INFO': {
-                        Keys: requestMap,
+                        Keys: requestMapList,
                         ProjectionExpression: 'id, img'
                     }
                 }
             };
             console.log('getHeroImg: Batch getting item from DynamoDB table DOTA2_HERO_INFO');
-            ddb.batchGetItem(params, function (err, data) {
-                if (err) {
-                    reject(Error('Error fetching hero image from DynamoDB; Error info: ' + err));
-                } else {
-                    let heroImgMap = {};
-                    data.Responses.DOTA2_HERO_INFO.forEach((heroInfo) => {
-                        heroImgMap[heroInfo.id.N] = imagePrefix + heroInfo.img.S;
-                    });
-                    resolve(heroImgMap);
-                }
+            return new Promise((resolve, reject) => {
+                ddb.batchGetItem(params, function (err, data) {
+                    if (err) {
+                        reject(Error('Error fetching hero image from DynamoDB; Error info: ' + err));
+                    } else {
+                        let heroImgMap = {};
+                        data.Responses.DOTA2_HERO_INFO.forEach((heroInfo) => {
+                            heroImgMap[heroInfo.id.N] = imagePrefix + heroInfo.img.S;
+                        });
+                        resolve(heroImgMap);
+                    }
+                });
             });
+        });
+        return Promise.all(batchGetPromises).then((responses) => {
+            return Object.assign({}, ...responses);
         });
     },
 
     getMatchDetails(matchIdList) {
-        return new Promise(function (resolve, reject) {
             let ddb = new aws.DynamoDB({apiVersion: '2012-08-10'});
-            let requestMap = matchIdList.map((matchId) => {
+            let requestMapList = matchIdList.map((matchId) => {
                 return {'match_id': {N: matchId.toString()}}
             });
+
+        let requestMapChuckList = [];
+        while (requestMapList.length > 0) {
+            requestMapChuckList.push(requestMapList.splice(0, 50));
+        }
+
+        let batchGetPromises = requestMapChuckList.map((requestMapList) => {
             let params = {
                 RequestItems: {
                     'NMZL_US_MATCHES': {
-                        Keys: requestMap,
+                        Keys: requestMapList,
                         ProjectionExpression: 'match_id, json'
                     }
                 }
             };
 
             console.log('getMatchDetails: Batch getting item from DynamoDB table NMZL_US_MATCHES');
-            ddb.batchGetItem(params, (err, data) => {
-                if (err) {
-                    reject(Error('Error fetching matches data from DynamoDB; Error info: ' + err));
-                } else {
-                    let matchDetailsMap = {}
-                    data.Responses.NMZL_US_MATCHES.forEach((record) => {
-                        matchDetailsMap[record.match_id.N] = record.json.S;
-                    });
-                    resolve(matchDetailsMap);
-                }
+            return new Promise((resolve, reject) => {
+                ddb.batchGetItem(params, (err, data) => {
+                    if (err) {
+                        reject(Error('Error fetching matches data from DynamoDB; Error info: ' + err));
+                    } else {
+                        let matchDetailsMap = {};
+                        data.Responses.NMZL_US_MATCHES.forEach((record) => {
+                            matchDetailsMap[record.match_id.N] = record.json.S;
+                        });
+                        resolve(matchDetailsMap);
+                    }
+                });
             });
+        });
+
+        return Promise.all(batchGetPromises).then((responses) => {
+            return Object.assign({}, ...responses);
         });
     },
 
