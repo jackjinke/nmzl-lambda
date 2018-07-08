@@ -76,6 +76,10 @@ Parameters:
     Type: String
     Description: Rate expression for RefreshPlayersMatches Lambda function
     Default: 'rate(1 day)'
+  UpdateHeroMetadataRateExpression:
+    Type: String
+    Description: Rate expression for UpdateHeroMetadata Lambda function
+    Default: 'rate(1 day)'
 
 Metadata:
   'AWS::CloudFormation::Interface':
@@ -121,6 +125,10 @@ Metadata:
           default: RefreshPlayersMatches Configuration
         Parameters:
         - RefreshPlayersMatchesRateExpression
+      - Label:
+          default: UpdateHeroMetadata Configuration
+        Parameters:
+        - UpdateHeroMetadataRateExpression
     ParameterLabels:
       GitHubToken:
         default: GitHub OAuth2 Token
@@ -154,6 +162,8 @@ Metadata:
         default: Cache TTL for GetHeroMetadata Lambda function
       RefreshPlayersMatchesRateExpression:
         default: Rate expression for RefreshPlayersMatches Lambda function
+      UpdateHeroMetadataRateExpression:
+        default: Rate expression for UpdateHeroMetadata Lambda function
 
 Resources:
   TransformBucket:
@@ -320,7 +330,8 @@ Resources:
                     "GetBattleCupMatchesLambdaCacheTTL" : "${GetBattleCupMatchesLambdaCacheTTL}",
                     "GetBattleCupMatchesLambdaTeamPlayerCountThreshold" : "${GetBattleCupMatchesLambdaTeamPlayerCountThreshold}",
                     "GetHeroMetadataLambdaCacheTTL" : "${GetHeroMetadataLambdaCacheTTL}",
-                    "RefreshPlayersMatchesRateExpression" : "${RefreshPlayersMatchesRateExpression}"
+                    "RefreshPlayersMatchesRateExpression" : "${RefreshPlayersMatchesRateExpression}",
+                    "UpdateHeroMetadataRateExpression" : "${UpdateHeroMetadataRateExpression}"
                   }
                 RoleArn: !GetAtt
                 - CloudFormationRole

@@ -1,7 +1,7 @@
 const aws = require('aws-sdk');
 
 module.exports = {
-    getHeroMetadata, getAllHeroMetadata
+    getHeroMetadata, getAllHeroMetadata, putHeroMetadata
 };
 
 function getHeroMetadata(heroIdList, projectionExpression = []) {
@@ -69,4 +69,39 @@ function getAllHeroMetadata() {
             }
         });
     });
+}
+
+function putHeroMetadata(heroMetadataObjectList) {
+    let ddb = new aws.DynamoDB({apiVersion: '2012-08-10'});
+    let putRequests = heroMetadataObjectList.map((heroMetadataObject) => {
+        return {
+            PutRequest: {
+                Item: heroMetadataObject
+            }
+        };
+    });
+    let putRequestChuckList = [];
+    while (putRequests.length > 0) {
+        putRequestChuckList.push(putRequests.splice(0, 25));
+    }
+    let batchWritePromises = putRequestChuckList.map((putRequestChuck) => {
+        return new Promise(function (resolve, reject) {
+            let params = {
+                RequestItems: {
+                    'DOTA2_HERO_INFO': putRequestChuck
+                }
+            };
+
+            console.log('putHeroMetadata: Batch writing item to DynamoDB table DOTA2_HERO_INFO');
+            ddb.batchWriteItem(params, (err) => {
+                if (err) {
+                    reject(Error('Error writing matches data to DynamoDB; Error info: ' + err));
+                } else {
+                    resolve();
+                }
+            });
+        });
+    });
+
+    return Promise.all(batchWritePromises);
 }

@@ -29,6 +29,9 @@ Parameters:
   RefreshPlayersMatchesRateExpression:
     Type: String
     Default: 'rate(1 day)'
+  UpdateHeroMetadataRateExpression:
+    Type: String
+    Default: 'rate(1 day)'
 
 Globals:
   Function:
@@ -279,7 +282,7 @@ Resources:
           Fn::GetAtt:
           - RefreshPlayersMatchesFunction
           - Arn
-        Id: RefreshPlayersMatchesFunction
+        Id: RefreshPlayersMatches
 
   RefreshPlayersMatchesPermissionForEvents:
     Type: AWS::Lambda::Permission
@@ -290,4 +293,71 @@ Resources:
       SourceArn:
         Fn::GetAtt:
         - RefreshPlayersMatchesLambdaScheduledRule
+        - Arn
+
+  ########## UpdateHeroMetadata ##########
+  UpdateHeroMetadataFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: 'update-hero-metadata.handler'
+      Role:
+        Fn::GetAtt:
+        - UpdateHeroMetadataLambdaExecutionRole
+        - Arn
+      Timeout: 5
+      Environment:
+        Variables:
+          OPENDOTA_API_KEY: !Ref OpenDotaApiKey
+
+  UpdateHeroMetadataLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Action:
+          - sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  UpdateHeroMetadataDynamoDBAccessPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: UpdateHeroMetadataDynamoDBAccessPolicy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Action:
+          - 'dynamodb:BatchWriteItem'
+          Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/DOTA2_HERO_INFO'
+      Roles:
+      - !Ref UpdateHeroMetadataLambdaExecutionRole
+
+  UpdateHeroMetadataLambdaScheduledRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: UpdateHeroMetadataLambdaScheduledRule
+      ScheduleExpression: !Ref UpdateHeroMetadataRateExpression
+      State: ENABLED
+      Targets:
+      - Arn:
+          Fn::GetAtt:
+          - UpdateHeroMetadataFunction
+          - Arn
+        Id: UpdateHeroMetadata
+
+  UpdateHeroMetadataPermissionForEvents:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref UpdateHeroMetadataFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn:
+        Fn::GetAtt:
+        - UpdateHeroMetadataLambdaScheduledRule
         - Arn

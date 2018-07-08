@@ -67,7 +67,7 @@ function putMatchDetails(matchList) {
         putRequestChuckList.push(putRequests.splice(0, 25));
     }
     let batchWritePromises = putRequestChuckList.map((putRequestChuck) => {
-        new Promise(function (resolve, reject) {
+        return new Promise(function (resolve, reject) {
             let params = {
                 RequestItems: {
                     'NMZL_US_MATCHES': putRequestChuck

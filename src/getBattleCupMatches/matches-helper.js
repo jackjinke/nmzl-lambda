@@ -71,7 +71,8 @@ function getRawMatchesFromSteamId(steamId) {
             const contentType = res.headers['content-type'];
             if (res.statusCode !== 200) {
                 error = new Error(`API call for retrieving battle cup matches data of Steam account ${steamId} has failed; request error code: ${res.statusCode}`);
-            } else if (!/^application\/json/.test(contentType)) {
+            }
+            else if (!/^application\/json/.test(contentType)) {
                 error = new Error(`Invalid content-type, expecting application/json but received ${contentType}`);
             }
             if (error) {
