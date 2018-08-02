@@ -19,8 +19,7 @@ function getMatchDetails(matchIdList) {
         let params = {
             RequestItems: {
                 'NMZL_US_MATCHES': {
-                    Keys: requestMapList,
-                    ProjectionExpression: 'match_id, json'
+                    Keys: requestMapList
                 }
             }
         };
@@ -33,7 +32,7 @@ function getMatchDetails(matchIdList) {
                 } else {
                     let matchDetailsMap = {};
                     data.Responses.NMZL_US_MATCHES.forEach((record) => {
-                        matchDetailsMap[record.match_id] = record.json;
+                        matchDetailsMap[record.match_id] = record;
                     });
                     resolve(matchDetailsMap);
                 }
@@ -51,10 +50,7 @@ function putMatchDetails(matchList) {
     let putRequests = matchList.map((match) => {
         return {
             PutRequest: {
-                Item: {
-                    'match_id': match.match_id,
-                    'json': JSON.stringify(match)
-                }
+                Item: match
             }
         };
     });

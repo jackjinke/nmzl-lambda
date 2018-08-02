@@ -107,7 +107,7 @@ function getMatchDetails(matchList) {
             matchList.forEach((match) => {
                 if (Object.keys(responses).includes(match.match_id.toString())) {
                     console.log('Found match ' + match.match_id + ' in DynamoDB');
-                    matchesFromDynamoDB.push(JSON.parse(responses[match.match_id]));
+                    matchesFromDynamoDB.push(responses[match.match_id]);
                 }
                 else {
                     console.log('Did not found match ' + match.match_id + ' in DynamoDB, will call OpenDota API');
