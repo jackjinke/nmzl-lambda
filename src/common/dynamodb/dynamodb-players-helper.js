@@ -6,7 +6,7 @@ module.exports = {
 
 function getPlayersInfo() {
     return new Promise(function (resolve, reject) {
-        let ddb = new aws.DynamoDB({apiVersion: '2012-08-10'});
+        let ddb = new aws.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
         let params = {
             TableName: "NMZL_US_PLAYERS"
         };

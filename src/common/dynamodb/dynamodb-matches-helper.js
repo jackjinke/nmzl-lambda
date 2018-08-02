@@ -5,9 +5,9 @@ module.exports = {
 };
 
 function getMatchDetails(matchIdList) {
-    let ddb = new aws.DynamoDB({apiVersion: '2012-08-10'});
+    let ddb = new aws.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
     let requestMapList = matchIdList.map((matchId) => {
-        return {'match_id': {N: matchId.toString()}}
+        return {'match_id': matchId}
     });
 
     let requestMapChuckList = [];
@@ -27,13 +27,13 @@ function getMatchDetails(matchIdList) {
 
         console.log('getMatchDetails: Batch getting item from DynamoDB table NMZL_US_MATCHES');
         return new Promise((resolve, reject) => {
-            ddb.batchGetItem(params, (err, data) => {
+            ddb.batchGet(params, (err, data) => {
                 if (err) {
-                    reject(Error('Error fetching matches data from DynamoDB; Error info: ' + err));
+                    reject(Error('Error fetching match(es) data from DynamoDB; Error info: ' + err));
                 } else {
                     let matchDetailsMap = {};
                     data.Responses.NMZL_US_MATCHES.forEach((record) => {
-                        matchDetailsMap[record.match_id.N] = record.json.S;
+                        matchDetailsMap[record.match_id] = record.json;
                     });
                     resolve(matchDetailsMap);
                 }
@@ -47,17 +47,13 @@ function getMatchDetails(matchIdList) {
 }
 
 function putMatchDetails(matchList) {
-    let ddb = new aws.DynamoDB({apiVersion: '2012-08-10'});
+    let ddb = new aws.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
     let putRequests = matchList.map((match) => {
         return {
             PutRequest: {
                 Item: {
-                    'match_id': {
-                        N: match.match_id.toString()
-                    },
-                    'json': {
-                        S: JSON.stringify(match)
-                    }
+                    'match_id': match.match_id,
+                    'json': JSON.stringify(match)
                 }
             }
         };
@@ -74,8 +70,8 @@ function putMatchDetails(matchList) {
                 }
             };
 
-            console.log('putMatchDetails: Batch writing item to DynamoDB table NMZL_US_MATCHES');
-            ddb.batchWriteItem(params, (err) => {
+            console.log('putMatchDetails: Batch writing item(s) to DynamoDB table NMZL_US_MATCHES');
+            ddb.batchWrite(params, (err) => {
                 if (err) {
                     reject(Error('Error writing matches data to DynamoDB; Error info: ' + err));
                 } else {

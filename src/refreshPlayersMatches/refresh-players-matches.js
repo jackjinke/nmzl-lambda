@@ -6,7 +6,7 @@ exports.handler = (event, context, callback) => {
     dynamodbHelper.getPlayersInfo().then((playersInfo) => {
         let steamIdList = [];
         playersInfo.forEach((playerInfo) => {
-            playerInfo.STEAM_ID_LIST.L.map((steamIdObject) => steamIdObject.N).forEach((steamId) => {
+            playerInfo.STEAM_ID_LIST.forEach((steamId) => {
                 if (!steamIdList.includes(steamId)) {
                     steamIdList.push(steamId);
                 }

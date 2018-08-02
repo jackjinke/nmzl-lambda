@@ -40,7 +40,7 @@ exports.handler = (event, context, callback) => {
         console.log('Adding hero img links into player details');
         playerDetails.map((playerInfo) => {
             playerInfo.signature_heroes.forEach((signatureHero, signatureHeroIndex, signatureHeroArray) => {
-                signatureHeroArray[signatureHeroIndex].hero_img = heroMetadata[signatureHero.hero_id].img.S;
+                signatureHeroArray[signatureHeroIndex].hero_img = heroMetadata[signatureHero.hero_id].img;
             });
             return playerInfo;
         });
@@ -61,11 +61,10 @@ exports.handler = (event, context, callback) => {
 function getPlayersDetail(playerInfo) {
     return new Promise((resolve, reject) => {
         let playersDetail = {
-            player_name: playerInfo.PLAYER_NAME.S
+            player_name: playerInfo.PLAYER_NAME
         };
-        let steamIdList = playerInfo.STEAM_ID_LIST.L.map((steamIdObject) => steamIdObject.N);
 
-        steamHelper.getSteamListDetail(steamIdList).then(steamIdDetails => {
+        steamHelper.getSteamListDetail(playerInfo.STEAM_ID_LIST).then(steamIdDetails => {
             playersDetail.steam_accounts = steamIdDetails;
             return signatureHeroesHelper.getSignatureHeroes(steamIdDetails.map(steamIdDetail => steamIdDetail.steam_id));
         }).then(sigHeroes => {
