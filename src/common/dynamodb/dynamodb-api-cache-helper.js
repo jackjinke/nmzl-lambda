@@ -4,13 +4,13 @@ module.exports = {
     getCache, putCache
 };
 
-function getCache() {
+function getCache(suffix = null) {
     return new Promise(function (resolve, reject) {
         let ddb = new aws.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
         let params = {
             TableName: "NMZL_US_API_CACHE",
             Key: {
-                'CACHE_KEY': process.env['API_RESPONSE_CACHE_KEY']
+                'CACHE_KEY':  process.env['API_RESPONSE_CACHE_KEY'] + ((suffix == null) ? '' : '-' + suffix)
             }
         };
 

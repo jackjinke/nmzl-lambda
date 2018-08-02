@@ -2,6 +2,8 @@ const https = require('https');
 const dynamodbHelper = require('dynamodb-helper');
 const openDotaApiKey = process.env['OPENDOTA_API_KEY'];
 
+// DEPRECATED
+
 module.exports = {getMatchesFromSteamIdList};
 
 function getMatchesFromSteamIdList(steamIdList) {

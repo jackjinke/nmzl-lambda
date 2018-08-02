@@ -106,19 +106,19 @@ Resources:
       Roles:
       - !Ref GetPlayersLambdaExecutionRole
 
-  ########## GetBattleCupMatches ##########
-  GetBattleCupMatchesFunction:
+  ########## GetBattleCupMatches - Deprecated ##########
+  GetBattleCupMatchesDeprecatedFunction:
     Type: AWS::Serverless::Function
     Properties:
       Handler: 'get-battle-cup-matches.handler'
       Role:
         Fn::GetAtt:
-        - GetBattleCupMatchesLambdaExecutionRole
+        - GetBattleCupMatchesDeprecatedLambdaExecutionRole
         - Arn
       Timeout: 15
       Environment:
         Variables:
-          API_RESPONSE_CACHE_KEY: 'GetBattleCupMatches'
+          API_RESPONSE_CACHE_KEY: 'GetBattleCupMatchesDeprecated'
           CACHE_TTL: !Ref GetBattleCupMatchesLambdaCacheTTL
           BATTLE_CUP_TEAM_PLAYER_COUNT_THRESHOLD: !Ref GetBattleCupMatchesLambdaTeamPlayerCountThreshold
           OPENDOTA_API_KEY: !Ref OpenDotaApiKey
@@ -127,6 +127,70 @@ Resources:
           Type: Api
           Properties:
             Path: /matches
+            Method: get
+
+  GetBattleCupMatchesDeprecatedLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Action:
+          - sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  GetBattleCupMatchesLambdaDeprecatedDynamoDBAccessPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: GetBattleCupMatchesDeprecatedDynamoDBAccessPolicy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Action:
+          - 'dynamodb:Scan'
+          Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/NMZL_US_PLAYERS'
+        - Effect: Allow
+          Action:
+          - 'dynamodb:PutItem'
+          - 'dynamodb:GetItem'
+          Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/NMZL_US_API_CACHE'
+        - Effect: Allow
+          Action:
+          - 'dynamodb:BatchGetItem'
+          Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/DOTA2_HERO_INFO'
+        - Effect: Allow
+          Action:
+          - 'dynamodb:BatchGetItem'
+          - 'dynamodb:BatchWriteItem'
+          Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/NMZL_US_MATCHES'
+      Roles:
+      - !Ref GetBattleCupMatchesDeprecatedLambdaExecutionRole
+
+########## GetBattleCupMatches - New ##########
+  GetBattleCupMatchesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: 'get-battle-cup-matches.newHandler'
+      Role:
+        Fn::GetAtt:
+        - GetBattleCupMatchesLambdaExecutionRole
+        - Arn
+      Timeout: 10
+      Environment:
+        Variables:
+          API_RESPONSE_CACHE_KEY: 'GetBattleCupMatches'
+          CACHE_TTL: !Ref GetBattleCupMatchesLambdaCacheTTL
+      Events:
+        GetResource:
+          Type: Api
+          Properties:
+            Path: /matches/battlecup
             Method: get
 
   GetBattleCupMatchesLambdaExecutionRole:
@@ -153,10 +217,6 @@ Resources:
         Statement:
         - Effect: Allow
           Action:
-          - 'dynamodb:Scan'
-          Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/NMZL_US_PLAYERS'
-        - Effect: Allow
-          Action:
           - 'dynamodb:PutItem'
           - 'dynamodb:GetItem'
           Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/NMZL_US_API_CACHE'
@@ -166,9 +226,8 @@ Resources:
           Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/DOTA2_HERO_INFO'
         - Effect: Allow
           Action:
-          - 'dynamodb:BatchGetItem'
-          - 'dynamodb:BatchWriteItem'
-          Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/NMZL_US_MATCHES'
+          - 'dynamodb:Query'
+          Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/NMZL_US_MATCHES/index/INDEX_LOBBY_TYPE'
       Roles:
       - !Ref GetBattleCupMatchesLambdaExecutionRole
 

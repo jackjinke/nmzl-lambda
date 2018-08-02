@@ -1,7 +1,7 @@
 const aws = require('aws-sdk');
 
 module.exports = {
-    getMatchDetails, putMatchDetails
+    getMatchDetails, putMatchDetails, getBattleCupMatches
 };
 
 function getMatchDetails(matchIdList) {
@@ -78,4 +78,28 @@ function putMatchDetails(matchList) {
     });
 
     return Promise.all(batchWritePromises);
+}
+
+function getBattleCupMatches() {
+    let ddb = new aws.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
+    let params = {
+        TableName: 'NMZL_US_MATCHES',
+        IndexName: 'INDEX_LOBBY_TYPE',
+        KeyConditionExpression: 'lobby_type = :lobby_type',
+        ExpressionAttributeValues: {
+            ':lobby_type': 9
+        },
+        ScanIndexForward: false
+      };
+
+    console.log('getBattleCupMatches: Querying battle cup match(es) from DynamoDB table NMZL_US_MATCHES');
+    return new Promise((resolve, reject) => {
+        ddb.query(params, (err, data) => {
+            if (err) {
+                reject(Error('Error querying battle cup match(es) data from DynamoDB; Error info: ' + err));
+            } else {
+                resolve(data.Items);
+            }
+        });
+    });
 }
