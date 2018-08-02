@@ -18,8 +18,8 @@ exports.handler = (event, context, callback) => {
         console.log('Got player info');
         let steamIdList = [];
         responses.forEach((playerInfo) => {
-            playerInfo.STEAM_ID_LIST.L.forEach((steamIdObject) => {
-                steamIdList.push(steamIdObject.N);
+            playerInfo.STEAM_ID_LIST.forEach((steamId) => {
+                steamIdList.push(steamId);
             });
         });
         let matchesListPromise = matchesHelper.getMatchesFromSteamIdList(steamIdList);
@@ -46,10 +46,10 @@ exports.handler = (event, context, callback) => {
         let matchesListWithImg = [];
         matchesList.forEach((matchInfo) => {
             matchInfo.radiant_lineup = matchInfo.radiant_lineup.map((heroId) => {
-                return {'hero_id': heroId, 'hero_img': heroMetadata[heroId].img.S}
+                return {'hero_id': heroId, 'hero_img': heroMetadata[heroId].img}
             });
             matchInfo.dire_lineup = matchInfo.dire_lineup.map((heroId) => {
-                return {'hero_id': heroId, 'hero_img': heroMetadata[heroId].img.S}
+                return {'hero_id': heroId, 'hero_img': heroMetadata[heroId].img}
             });
 
             matchesListWithImg.push(matchInfo);

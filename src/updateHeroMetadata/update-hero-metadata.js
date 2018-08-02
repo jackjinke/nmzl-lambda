@@ -34,18 +34,15 @@ exports.handler = (event, context, callback) => {
         });
     }).then((response) => {
         console.log('Got hero stats data from OpenDota, calculating winrate map');
-        let heroMetadataObjectList = response.map((heroStat) => {
-            let winRate = {};
+        let heroMetadataList = response.map((heroStat) => {
+            let winRateMap = {};
             Object.keys(heroStat).filter((key) => /.*_pick$/.test(key)).forEach((pickKey) => {
                 let level = pickKey.split('_pick')[0];
                 let winKey = level+ '_win';
                 if (heroStat[pickKey] === 0) {
-                    winRate[level] = {N: '0'};
-                }
-                else {
-                    winRate[level] = {
-                        N: (heroStat[winKey] / heroStat[pickKey]).toFixed(4).toString()
-                    };
+                    winRateMap[level] = 0;
+                } else {
+                    winRateMap[level] = (heroStat[winKey] / heroStat[pickKey]).toFixed(4);
                 }
                 // Remove these data after calculating winrate
                 heroStat[pickKey] = undefined;
@@ -55,25 +52,12 @@ exports.handler = (event, context, callback) => {
                 'Got winrate map for hero id:' +
                 heroStat.id +
                 ', winrate map: ' +
-                JSON.stringify(winRate)
+                JSON.stringify(winRateMap)
             );
-            let heroMetadataObject = {
-                id: {N: heroStat.id.toString()},
-                localized_name: {S: heroStat.localized_name},
-                name: {S: heroStat.name},
-                img: {S: heroStat.img},
-                icon: {S: heroStat.icon},
-                winrate: {M: winRate}
-            };
-            // Remove parsed data to reduce data redundancy
-            heroStat.id = heroStat.hero_id = undefined;
-            heroStat.localized_name = heroStat.name = undefined;
-            heroStat.img = heroStat.icon = undefined;
-            // Store other unparsed data
-            heroMetadataObject.metadata = {S: JSON.stringify(heroStat)};
-            return heroMetadataObject;
+            heroStat.winrate = winRateMap;
+            return heroStat;
         });
-        return dynamodbHelper.HeroMetadata.putHeroMetadata(heroMetadataObjectList);
+        return dynamodbHelper.HeroMetadata.putHeroMetadata(heroMetadataList);
     }).then(() => {
         console.log('Successfully updated hero metadata');
         callback(null);
