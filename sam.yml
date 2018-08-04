@@ -362,6 +362,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: 'load-matches.handler'
+      MemorySize: 256
       Role:
         Fn::GetAtt:
         - LoadMatchesLambdaExecutionRole

@@ -3,7 +3,7 @@ const dynamodbHelper = require('dynamodb-helper');
 const openDotaApiKey = process.env['OPENDOTA_API_KEY'];
 const teamPlayerCountThreshold = parseInt(process.env['TEAM_PLAYER_COUNT_THRESHOLD']);
 
-exports.handler = async (event, context, callback) => {
+exports.handler = async (event, context) => {
     try {
         let playersInfo = await dynamodbHelper.Players.getPlayersInfo();
         console.log('Got players info');
@@ -43,16 +43,17 @@ exports.handler = async (event, context, callback) => {
         });
 
         let existingMatchIds = await dynamodbHelper.Matches.getAllMatchIds();
+        console.log('Found ' + existingMatchIds.length + ' existing matches: ' + existingMatchIds);
         existingMatchIds.forEach((matchId) => {
             matchMap[matchId] = undefined;
         });
         // Use stringfy then parse to clean up undefined values
         let loadedMatchList = await loadMatchDetails(JSON.parse(JSON.stringify(matchMap)));
-        console.log('Successfully loaded matches: ' + loadedMatchList);
-        callback(null);
+        console.log('Successfully loaded all new matches: ' + loadedMatchList);
+        return null;
     } catch (error) {
         console.error(error);
-        callback(error);
+        return error;
     }
 };
 

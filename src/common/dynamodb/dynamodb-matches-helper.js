@@ -113,20 +113,30 @@ function getBattleCupMatches() {
     });
 }
 
-function getAllMatchIds() {
+function getAllMatchIds(exclusiveStartKey = null) {
     return new Promise(function (resolve, reject) {
         let ddb = new aws.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
         let params = {
             TableName: 'NMZL_US_MATCHES',
             ProjectionExpression: 'match_id'
         };
+        if (exclusiveStartKey !== null) {
+            params.ExclusiveStartKey = exclusiveStartKey;
+        }
 
         console.log('getAllMatchIds: Scanning DynamoDB table NMZL_US_MATCHES for all match ids');
         ddb.scan(params, function (err, data) {
             if (err) {
                 reject(Error('Error fetching matches ids from DynamoDB; Error info: ' + err));
             } else {
-                resolve(data.Items.map(matchObj => matchObj.match_id));
+                let matchIdList = data.Items.map(matchObj => matchObj.match_id);
+                if (data.LastEvaluatedKey !== undefined) {
+                    getAllMatchIds(data.LastEvaluatedKey).then((otherMatchIdList) => {
+                        resolve(otherMatchIdList.concat(matchIdList));
+                    });
+                } else {
+                    resolve(matchIdList);
+                }
             }
         });
     });
