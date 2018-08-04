@@ -49,7 +49,7 @@ function getMatchDetails(matchIdList) {
 
 function putMatchDetails(matchList) {
     matchList = matchList.filter(match => match !== null);
-    let ddb = new aws.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
+    let ddb = new aws.DynamoDB.DocumentClient({apiVersion: '2012-08-10', convertEmptyValues: true});
     
     let matchChunkList = [];
     while (matchList.length > 0) {
