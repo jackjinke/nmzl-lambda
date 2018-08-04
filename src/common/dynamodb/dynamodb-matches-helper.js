@@ -1,7 +1,9 @@
 const aws = require('aws-sdk');
 
 module.exports = {
-    getMatchDetails, putMatchDetails, getBattleCupMatches
+    getMatchDetails, putMatchDetails, 
+    getBattleCupMatches,
+    getAllMatchIds
 };
 
 function getMatchDetails(matchIdList) {
@@ -46,23 +48,26 @@ function getMatchDetails(matchIdList) {
 }
 
 function putMatchDetails(matchList) {
+    matchList = matchList.filter(match => match !== null);
     let ddb = new aws.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
-    let putRequests = matchList.map((match) => {
-        return {
-            PutRequest: {
-                Item: match
-            }
-        };
-    });
-    let putRequestChuckList = [];
-    while (putRequests.length > 0) {
-        putRequestChuckList.push(putRequests.splice(0, 25));
+    
+    let matchChunkList = [];
+    while (matchList.length > 0) {
+        matchChunkList.push(matchList.splice(0, 25));
     }
-    let batchWritePromises = putRequestChuckList.map((putRequestChuck) => {
+    let batchWritePromises = matchChunkList.map((matchChunk) => {
         return new Promise(function (resolve, reject) {
+            let putRequests = matchChunk.map((match) => {
+                return {
+                    PutRequest: {
+                        Item: match
+                    }
+                };
+            });
+
             let params = {
                 RequestItems: {
-                    'NMZL_US_MATCHES': putRequestChuck
+                    'NMZL_US_MATCHES': putRequests
                 }
             };
 
@@ -71,13 +76,17 @@ function putMatchDetails(matchList) {
                 if (err) {
                     reject(Error('Error writing matches data to DynamoDB; Error info: ' + err));
                 } else {
-                    resolve();
+                    resolve(matchChunk.map((match) => {
+                        return match.match_id;
+                    }));
                 }
             });
         });
     });
 
-    return Promise.all(batchWritePromises);
+    return Promise.all(batchWritePromises).then((putMatchIdList) => {
+        return [].concat.apply(putMatchIdList);
+    });
 }
 
 function getBattleCupMatches() {
@@ -99,6 +108,25 @@ function getBattleCupMatches() {
                 reject(Error('Error querying battle cup match(es) data from DynamoDB; Error info: ' + err));
             } else {
                 resolve(data.Items);
+            }
+        });
+    });
+}
+
+function getAllMatchIds() {
+    return new Promise(function (resolve, reject) {
+        let ddb = new aws.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
+        let params = {
+            TableName: 'NMZL_US_MATCHES',
+            ProjectionExpression: 'match_id'
+        };
+
+        console.log('getAllMatchIds: Scanning DynamoDB table NMZL_US_MATCHES for all match ids');
+        ddb.scan(params, function (err, data) {
+            if (err) {
+                reject(Error('Error fetching matches ids from DynamoDB; Error info: ' + err));
+            } else {
+                resolve(data.Items.map(matchObj => matchObj.match_id));
             }
         });
     });

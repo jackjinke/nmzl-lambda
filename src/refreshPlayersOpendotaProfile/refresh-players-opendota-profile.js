@@ -3,7 +3,7 @@ const dynamodbHelper = require('dynamodb-helper');
 const openDotaApiKey = process.env['OPENDOTA_API_KEY'];
 
 exports.handler = (event, context, callback) => {
-    dynamodbHelper.getPlayersInfo().then((playersInfo) => {
+    dynamodbHelper.Players.getPlayersInfo().then((playersInfo) => {
         let steamIdList = [];
         playersInfo.forEach((playerInfo) => {
             playerInfo.STEAM_ID_LIST.forEach((steamId) => {

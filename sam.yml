@@ -8,6 +8,9 @@ Parameters:
   OpenDotaApiKey:
     NoEcho: true
     Type: String
+  TeamPlayerCountThreshold:
+    Type: Number
+    Default: 3
   GetPlayersLambdaCacheTTL:
     Type: Number
     Default: 120
@@ -20,16 +23,16 @@ Parameters:
   GetBattleCupMatchesLambdaCacheTTL:
     Type: Number
     Default: 120
-  GetBattleCupMatchesLambdaTeamPlayerCountThreshold:
-    Type: Number
-    Default: 3
   GetHeroMetadataLambdaCacheTTL:
     Type: Number
     Default: 3600
-  RefreshPlayersMatchesRateExpression:
+  RefreshPlayersOpendotaProfileScheduleExpression:
     Type: String
-    Default: 'rate(1 day)'
-  UpdateHeroMetadataRateExpression:
+    Default: 'cron(0 9 * * ? *)'
+  LoadMatchesScheduleExpression:
+    Type: String
+    Default: 'cron(0 10 * * ? *)'
+  UpdateHeroMetadataScheduleExpression:
     Type: String
     Default: 'rate(1 day)'
 
@@ -120,7 +123,7 @@ Resources:
         Variables:
           API_RESPONSE_CACHE_KEY: 'GetBattleCupMatchesDeprecated'
           CACHE_TTL: !Ref GetBattleCupMatchesLambdaCacheTTL
-          BATTLE_CUP_TEAM_PLAYER_COUNT_THRESHOLD: !Ref GetBattleCupMatchesLambdaTeamPlayerCountThreshold
+          BATTLE_CUP_TEAM_PLAYER_COUNT_THRESHOLD: !Ref TeamPlayerCountThreshold
           OPENDOTA_API_KEY: !Ref OpenDotaApiKey
       Events:
         GetResource:
@@ -287,21 +290,21 @@ Resources:
       Roles:
       - !Ref GetHeroMetadataLambdaExecutionRole
 
-  ########## RefreshPlayersMatches ##########
-  RefreshPlayersMatchesFunction:
+  ########## RefreshPlayersOpendotaProfile ##########
+  RefreshPlayersOpendotaProfileFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: 'refresh-players-matches.handler'
+      Handler: 'refresh-players-opendota-profile.handler'
       Role:
         Fn::GetAtt:
-        - RefreshPlayersMatchesLambdaExecutionRole
+        - RefreshPlayersOpendotaProfileLambdaExecutionRole
         - Arn
       Timeout: 5
       Environment:
         Variables:
           OPENDOTA_API_KEY: !Ref OpenDotaApiKey
 
-  RefreshPlayersMatchesLambdaExecutionRole:
+  RefreshPlayersOpendotaProfileLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -316,10 +319,10 @@ Resources:
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
-  RefreshPlayersMatchesLambdaDynamoDBAccessPolicy:
+  RefreshPlayersOpendotaProfileLambdaDynamoDBAccessPolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: RefreshPlayersMatchesLambdaDynamoDBAccessPolicy
+      PolicyName: RefreshPlayersOpendotaProfileLambdaDynamoDBAccessPolicy
       PolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -328,30 +331,103 @@ Resources:
           - 'dynamodb:Scan'
           Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/NMZL_US_PLAYERS'
       Roles:
-      - !Ref RefreshPlayersMatchesLambdaExecutionRole
+      - !Ref RefreshPlayersOpendotaProfileLambdaExecutionRole
 
-  RefreshPlayersMatchesLambdaScheduledRule:
+  RefreshPlayersOpendotaProfileLambdaScheduledRule:
     Type: AWS::Events::Rule
     Properties:
-      Description: RefreshPlayersMatchesLambdaScheduledRule
-      ScheduleExpression: !Ref RefreshPlayersMatchesRateExpression
+      Description: RefreshPlayersOpendotaProfileLambdaScheduledRule
+      ScheduleExpression: !Ref RefreshPlayersOpendotaProfileScheduleExpression
       State: ENABLED
       Targets:
       - Arn:
           Fn::GetAtt:
-          - RefreshPlayersMatchesFunction
+          - RefreshPlayersOpendotaProfileFunction
           - Arn
-        Id: RefreshPlayersMatches
+        Id: RefreshPlayersOpendotaProfile
 
-  RefreshPlayersMatchesPermissionForEvents:
+  RefreshPlayersOpendotaProfilePermissionForEvents:
     Type: AWS::Lambda::Permission
     Properties:
-      FunctionName: !Ref RefreshPlayersMatchesFunction
+      FunctionName: !Ref RefreshPlayersOpendotaProfileFunction
       Action: lambda:InvokeFunction
       Principal: events.amazonaws.com
       SourceArn:
         Fn::GetAtt:
-        - RefreshPlayersMatchesLambdaScheduledRule
+        - RefreshPlayersOpendotaProfileLambdaScheduledRule
+        - Arn
+
+########## LoadMatches ##########
+  LoadMatchesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: 'load-matches.handler'
+      Role:
+        Fn::GetAtt:
+        - LoadMatchesLambdaExecutionRole
+        - Arn
+      Timeout: 30
+      Environment:
+        Variables:
+          OPENDOTA_API_KEY: !Ref OpenDotaApiKey
+          TEAM_PLAYER_COUNT_THRESHOLD: !Ref TeamPlayerCountThreshold
+
+  LoadMatchesLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Action:
+          - sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  LoadMatchesLambdaDynamoDBAccessPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: LoadMatchesLambdaDynamoDBAccessPolicy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Action:
+          - 'dynamodb:Scan'
+          Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/NMZL_US_PLAYERS'
+        - Effect: Allow
+          Action:
+          - 'dynamodb:Scan'
+          - 'dynamodb:BatchWriteItem'
+          Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/NMZL_US_MATCHES'
+      Roles:
+      - !Ref LoadMatchesLambdaExecutionRole
+
+  LoadMatchesLambdaScheduledRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: LoadMatchesLambdaScheduledRule
+      ScheduleExpression: !Ref LoadMatchesScheduleExpression
+      State: ENABLED
+      Targets:
+      - Arn:
+          Fn::GetAtt:
+          - LoadMatchesFunction
+          - Arn
+        Id: LoadMatches
+
+  LoadMatchesPermissionForEvents:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref LoadMatchesFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn:
+        Fn::GetAtt:
+        - LoadMatchesLambdaScheduledRule
         - Arn
 
   ########## UpdateHeroMetadata ##########
@@ -401,7 +477,7 @@ Resources:
     Type: AWS::Events::Rule
     Properties:
       Description: UpdateHeroMetadataLambdaScheduledRule
-      ScheduleExpression: !Ref UpdateHeroMetadataRateExpression
+      ScheduleExpression: !Ref UpdateHeroMetadataScheduleExpression
       State: ENABLED
       Targets:
       - Arn:
