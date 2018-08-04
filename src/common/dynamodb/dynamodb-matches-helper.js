@@ -53,7 +53,7 @@ function putMatchDetails(matchList) {
     
     let matchChunkList = [];
     while (matchList.length > 0) {
-        matchChunkList.push(matchList.splice(0, 25));
+        matchChunkList.push(matchList.splice(0, 15));
     }
     let batchWritePromises = matchChunkList.map((matchChunk) => {
         return new Promise(function (resolve, reject) {

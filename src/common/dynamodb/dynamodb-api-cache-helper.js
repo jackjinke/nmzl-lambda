@@ -4,13 +4,13 @@ module.exports = {
     getCache, putCache
 };
 
-function getCache(suffix = null) {
+function getCache(overrideKey = null) {
     return new Promise(function (resolve, reject) {
         let ddb = new aws.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
         let params = {
             TableName: "NMZL_US_API_CACHE",
             Key: {
-                'CACHE_KEY':  process.env['API_RESPONSE_CACHE_KEY'] + ((suffix == null) ? '' : '-' + suffix)
+                'CACHE_KEY': (overrideKey === null) ? process.env['API_RESPONSE_CACHE_KEY'] : overrideKey
             }
         };
 
@@ -21,8 +21,7 @@ function getCache(suffix = null) {
             } else {
                 if (data.Item && data.Item.RESPONSE && data.Item.TTL > Math.floor((Date.now() / 1000))) {
                     resolve(data.Item.RESPONSE);
-                }
-                else {
+                } else {
                     resolve(null);
                 }
             }
@@ -30,15 +29,15 @@ function getCache(suffix = null) {
     });
 }
 
-function putCache(response) {
+function putCache(response, overrideKey = null, overrideTTL = null) {
     return new Promise(function (resolve, reject) {
         let ddb = new aws.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
-        let expirationTime = Math.floor((Date.now() / 1000)) + parseInt(process.env['CACHE_TTL']);
+        let expirationTime = Math.floor((Date.now() / 1000)) + parseInt((overrideTTL === null) ? process.env['CACHE_TTL'] : overrideTTL);
         console.log('Cache expiration time: ' + expirationTime);
         let params = {
             TableName: "NMZL_US_API_CACHE",
             Item: {
-                'CACHE_KEY': process.env['API_RESPONSE_CACHE_KEY'],
+                'CACHE_KEY': (overrideKey === null) ? process.env['API_RESPONSE_CACHE_KEY'] : overrideKey,
                 'RESPONSE': JSON.stringify(response),
                 'TTL': expirationTime
             }

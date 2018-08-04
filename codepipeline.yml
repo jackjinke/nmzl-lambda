@@ -80,6 +80,14 @@ Parameters:
     Type: String
     Description: Schedule expression for LoadMatches Lambda function
     Default: 'cron(0 10 * * ? *)'
+  RefreshAllMatchIdsScheduleExpression:
+    Type: String
+    Description: Schedule expression for RefreshAllMatchIds Lambda function
+    Default: 'cron(0 9 ? * SAT *)'
+  AllMatchIdsCacheTTL:
+    Type: Number
+    Description: Cache TTL for All MatchIds
+    Default: 129600 
   UpdateHeroMetadataScheduleExpression:
     Type: String
     Description: Schedule expression for UpdateHeroMetadata Lambda function
@@ -137,6 +145,11 @@ Metadata:
         Parameters:
         - LoadMatchesScheduleExpression
       - Label:
+          default: RefreshAllMatchIds Configuration
+        Parameters:
+        - RefreshAllMatchIdsScheduleExpression
+        - AllMatchIdsCacheTTL
+      - Label:
           default: UpdateHeroMetadata Configuration
         Parameters:
         - UpdateHeroMetadataScheduleExpression
@@ -160,23 +173,27 @@ Metadata:
       OpenDotaApiKey:
         default: OpenDota API Key
       TeamPlayerCountThreshold:
-        default: Team player count threshold to mark a matches as a valid team match
+        default: Team player count threshold
       GetPlayersLambdaCacheTTL:
-        default: Cache TTL for GetPlayers Lambda function
+        default: Cache TTL
       GetPlayersLambdaSignatureHeroCountThreshold:
-        default: Hero count threshold for calculating signature hero in GetPlayers Lambda function
+        default: Hero count threshold
       GetPlayersLambdaSignatureHeroMatchLimit:
-        default: Match limit for calculating signature hero in GetPlayers Lambda function
+        default: Match limit
       GetBattleCupMatchesLambdaCacheTTL:
-        default: Cache TTL for GetBattleCupMatches Lambda function
+        default: Cache TTL
       GetHeroMetadataLambdaCacheTTL:
-        default: Cache TTL for GetHeroMetadata Lambda function
+        default: Cache TTL
       RefreshPlayersOpendotaProfileScheduleExpression:
-        default: Schedule expression for RefreshPlayersMatches Lambda function
+        default: Schedule expression
       LoadMatchesScheduleExpression:
-        default: Schedule expression for LoadMatches Lambda function
+        default: Schedule expression
+      RefreshAllMatchIdsScheduleExpression:
+        default: Schedule expression
+      AllMatchIdsCacheTTL:
+        default: Cache TTL
       UpdateHeroMetadataScheduleExpression:
-        default: Schedule expression for UpdateHeroMetadata Lambda function
+        default: Schedule expression
 
 Resources:
   TransformBucket:
@@ -345,6 +362,8 @@ Resources:
                     "GetHeroMetadataLambdaCacheTTL" : "${GetHeroMetadataLambdaCacheTTL}",
                     "RefreshPlayersOpendotaProfileScheduleExpression" : "${RefreshPlayersOpendotaProfileScheduleExpression}",
                     "LoadMatchesScheduleExpression" : "${LoadMatchesScheduleExpression}",
+                    "RefreshAllMatchIdsScheduleExpression" : "${RefreshAllMatchIdsScheduleExpression}",
+                    "AllMatchIdsCacheTTL" : "${AllMatchIdsCacheTTL}",
                     "UpdateHeroMetadataScheduleExpression" : "${UpdateHeroMetadataScheduleExpression}"
                   }
                 RoleArn: !GetAtt

@@ -1,7 +1,10 @@
 const https = require('https');
 const dynamodbHelper = require('dynamodb-helper');
+const refreshAllMatchIds = require('refresh-all-match-ids');
 const openDotaApiKey = process.env['OPENDOTA_API_KEY'];
 const teamPlayerCountThreshold = parseInt(process.env['TEAM_PLAYER_COUNT_THRESHOLD']);
+const allMatchIdCacheKey = process.env['ALL_MATCH_ID_CACHE_KEY'];
+const allMatchIdCacheTTL = process.env['ALL_MATCH_ID_CACHE_TTL'];
 
 exports.handler = async (event, context) => {
     try {
@@ -42,15 +45,26 @@ exports.handler = async (event, context) => {
             }
         });
 
-        let existingMatchIds = await dynamodbHelper.Matches.getAllMatchIds();
-        console.log('Found ' + existingMatchIds.length + ' existing matches: ' + existingMatchIds);
-        existingMatchIds.forEach((matchId) => {
+        console.warn('Getting all match id cache');
+        let allMatchIdCache = await dynamodbHelper.ApiCache.getCache(allMatchIdCacheKey);
+        let existingMatchIdList = [];
+        if (allMatchIdCache === null) {
+            console.warn('All match id cache not found, getting existing match id now');
+            existingMatchIdList = await refreshAllMatchIds.handler({overrideKey: allMatchIdCacheKey, overrideTTL: allMatchIdCacheTTL});
+        } else {
+            existingMatchIdList = JSON.parse(allMatchIdCache);
+        }
+
+        console.log('Found ' + existingMatchIdList.length + ' existing matches: ' + existingMatchIdList);
+        existingMatchIdList.forEach((matchId) => {
             matchMap[matchId] = undefined;
         });
         // Use stringfy then parse to clean up undefined values
-        let loadedMatchList = await loadMatchDetails(JSON.parse(JSON.stringify(matchMap)));
-        console.log('Successfully loaded all new matches: ' + loadedMatchList);
-        return null;
+        let loadedMatchIdList = await loadMatchDetails(JSON.parse(JSON.stringify(matchMap)));
+        console.log('Successfully loaded all new matches: ' + loadedMatchIdList);
+        let allMatchIdList = existingMatchIdList.concat(loadedMatchIdList);
+        console.warn('Updating all match id cache');
+        return await dynamodbHelper.ApiCache.putCache(allMatchIdList, allMatchIdCacheKey, allMatchIdCacheTTL);
     } catch (error) {
         console.error(error);
         return error;
@@ -95,6 +109,7 @@ async function getAllMatchesForPlayerFromOpendota(steamId) {
 
 async function loadMatchDetails(matchesMap) {
     let matchIdList = Object.keys(matchesMap);
+    console.log('Loading new matches into DynamoDB: ' + matchIdList);
     let matchIdChunkList = [];
     while (matchIdList.length > 0) {
         matchIdChunkList.push(matchIdList.splice(0, 25));
@@ -120,7 +135,7 @@ async function loadMatchDetailsChunk(matchIdChunk, matchesMap) {
             return null;
         }
     }));
-    console.log('Writing chuck of new match details to DynamoDB');
+    console.log('Writing chunk of new match details to DynamoDB');
     return await dynamodbHelper.Matches.putMatchDetails(matchDetailsList);
 }
 

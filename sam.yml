@@ -25,13 +25,19 @@ Parameters:
     Default: 120
   GetHeroMetadataLambdaCacheTTL:
     Type: Number
-    Default: 3600
+    Default: 86400
   RefreshPlayersOpendotaProfileScheduleExpression:
     Type: String
     Default: 'cron(0 9 * * ? *)'
   LoadMatchesScheduleExpression:
     Type: String
     Default: 'cron(0 10 * * ? *)'
+  RefreshAllMatchIdsScheduleExpression: 
+    Type: String
+    Default: 'cron(0 9 ? * SAT *)'
+  AllMatchIdsCacheTTL: 
+    Type: Number
+    Default: 129600 
   UpdateHeroMetadataScheduleExpression:
     Type: String
     Default: 'rate(1 day)'
@@ -367,11 +373,13 @@ Resources:
         Fn::GetAtt:
         - LoadMatchesLambdaExecutionRole
         - Arn
-      Timeout: 30
+      Timeout: 60
       Environment:
         Variables:
           OPENDOTA_API_KEY: !Ref OpenDotaApiKey
           TEAM_PLAYER_COUNT_THRESHOLD: !Ref TeamPlayerCountThreshold
+          ALL_MATCH_ID_CACHE_KEY: 'AllMatchIds'
+          ALL_MATCH_ID_CACHE_TTL: !Ref AllMatchIdsCacheTTL
 
   LoadMatchesLambdaExecutionRole:
     Type: AWS::IAM::Role
@@ -404,6 +412,11 @@ Resources:
           - 'dynamodb:Scan'
           - 'dynamodb:BatchWriteItem'
           Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/NMZL_US_MATCHES'
+        - Effect: Allow
+          Action:
+          - 'dynamodb:GetItem'
+          - 'dynamodb:PutItem'
+          Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/NMZL_US_API_CACHE'
       Roles:
       - !Ref LoadMatchesLambdaExecutionRole
 
@@ -429,6 +442,79 @@ Resources:
       SourceArn:
         Fn::GetAtt:
         - LoadMatchesLambdaScheduledRule
+        - Arn
+
+  ########## RefreshAllMatchIds ##########
+  RefreshAllMatchIdsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: 'refresh-all-match-ids.handler'
+      Role:
+        Fn::GetAtt:
+        - RefreshAllMatchIdsLambdaExecutionRole
+        - Arn
+      MemorySize: 192
+      Timeout: 60
+      Environment:
+        Variables:
+          API_RESPONSE_CACHE_KEY: 'AllMatchIds'
+          CACHE_TTL: !Ref AllMatchIdsCacheTTL
+
+  RefreshAllMatchIdsLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Action:
+          - sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  RefreshAllMatchIdsDynamoDBAccessPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: RefreshAllMatchIdsDynamoDBAccessPolicy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Action:
+          - 'dynamodb:Scan'
+          Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/NMZL_US_MATCHES'
+        - Effect: Allow
+          Action:
+          - 'dynamodb:PutItem'
+          Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/NMZL_US_API_CACHE'
+      Roles:
+      - !Ref RefreshAllMatchIdsLambdaExecutionRole
+
+  RefreshAllMatchIdsLambdaScheduledRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: RefreshAllMatchIdsLambdaScheduledRule
+      ScheduleExpression: !Ref RefreshAllMatchIdsScheduleExpression
+      State: ENABLED
+      Targets:
+      - Arn:
+          Fn::GetAtt:
+          - RefreshAllMatchIdsFunction
+          - Arn
+        Id: RefreshAllMatchIds
+
+  RefreshAllMatchIdsPermissionForEvents:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref RefreshAllMatchIdsFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn:
+        Fn::GetAtt:
+        - RefreshAllMatchIdsLambdaScheduledRule
         - Arn
 
   ########## UpdateHeroMetadata ##########
