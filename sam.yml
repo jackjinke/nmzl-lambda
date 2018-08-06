@@ -48,6 +48,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: 'get-players.handler'
+      MemorySize: 512
       Role:
         Fn::GetAtt:
         - GetPlayersLambdaExecutionRole
@@ -111,6 +112,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: 'get-battle-cup-matches.handler'
+      MemorySize: 512
       Role:
         Fn::GetAtt:
         - GetBattleCupMatchesLambdaExecutionRole
@@ -177,6 +179,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: 'get-hero-metadata.handler'
+      MemorySize: 256
       Role:
         Fn::GetAtt:
         - GetHeroMetadataLambdaExecutionRole
@@ -300,6 +303,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: 'update-hero-metadata.handler'
+      MemorySize: 256
       Role:
         Fn::GetAtt:
         - UpdateHeroMetadataLambdaExecutionRole
