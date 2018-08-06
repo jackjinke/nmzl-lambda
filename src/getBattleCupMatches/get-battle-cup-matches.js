@@ -85,16 +85,18 @@ function getBattleCupMatches(event, context, callback) {
         let heroMetadataPromise = matchesListPromise.then((responses) => {
             console.log('Got all battle cup match details, adding hero image info');
             let heroIdList = [];
-            responses.forEach((matchInfo) => {
-                matchInfo.radiant_lineup.forEach((heroId) => {
-                    if (!heroIdList.includes(heroId)) {
-                        heroIdList.push(heroId);
+            responses.forEach((match) => {
+                match.radiant_lineup = match.players.slice(0, 5).map((player) => {
+                    if (!heroIdList.includes(player.hero_id)) {
+                        heroIdList.push(player.hero_id);
                     }
+                    return player.hero_id;
                 });
-                matchInfo.dire_lineup.forEach((heroId) => {
-                    if (!heroIdList.includes(heroId)) {
-                        heroIdList.push(heroId);
+                match.dire_lineup = match.players.slice(5, 10).map((player) => {
+                    if (!heroIdList.includes(player.hero_id)) {
+                        heroIdList.push(player.hero_id);
                     }
+                    return player.hero_id;
                 });
             });
             return dynamodbHelper.HeroMetadata.getHeroMetadata(heroIdList, ['img']);
@@ -102,24 +104,23 @@ function getBattleCupMatches(event, context, callback) {
         return Promise.all([matchesListPromise, heroMetadataPromise]);
     }).then(([matchesList, heroMetadata]) => {
         console.log('Got all hero img, adding img links into matches list');
-        let matchesListWithImg = [];
-        matchesList.forEach((matchInfo) => {
-            matchInfo.radiant_lineup = matchInfo.radiant_lineup.map((heroId) => {
-                return {'hero_id': heroId, 'hero_img': heroMetadata[heroId].img}
+        let matchWithImgList = [];
+        matchesList.forEach((match) => {
+            match.radiant_lineup = match.radiant_lineup.map((heroId) => {
+                return {hero_id: heroId, img: heroMetadata[heroId].img};
             });
-            matchInfo.dire_lineup = matchInfo.dire_lineup.map((heroId) => {
-                return {'hero_id': heroId, 'hero_img': heroMetadata[heroId].img}
+            match.dire_lineup = match.dire_lineup.map((heroId) => {
+                return {hero_id: heroId, img: heroMetadata[heroId].img};
             });
-
-            matchesListWithImg.push(matchInfo);
+            matchWithImgList.push(match);
         });
 
-        console.log('Got all battle cup match details, putting cache and calling back with response: ' + JSON.stringify(matchesListWithImg));
-        dynamodbHelper.ApiCache.putCache(matchesListWithImg).then(() => {
-            responseHelper.returnSuccess(matchesListWithImg, callback);
+        console.log('Got all battle cup match details, putting cache and calling back with response: ' + JSON.stringify(matchWithImgList));
+        dynamodbHelper.ApiCache.putCache(matchWithImgList).then(() => {
+            responseHelper.returnSuccess(matchWithImgList, callback);
         }).catch((e) => {
             console.warn(e);
-            responseHelper.returnSuccess(matchesListWithImg, callback);
+            responseHelper.returnSuccess(matchWithImgList, callback);
         });
     }).catch((error) => {
         responseHelper.returnError(error, callback);

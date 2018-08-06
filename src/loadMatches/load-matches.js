@@ -128,7 +128,7 @@ async function loadMatchDetails(matchesMap) {
 async function loadMatchDetailsChunk(matchIdChunk, matchesMap) {
     let matchDetailsList = await Promise.all(matchIdChunk.map(async (matchId) => {
         try {
-            let matchDetails = await getSingleMatchDetailsFromOpenDota(matchId);
+            let matchDetails = removeUnnecessaryData(await getSingleMatchDetailsFromOpenDota(matchId));
             return Object.assign(matchDetails, matchesMap[matchId]);
         } catch (err) {
             console.warn(err);
@@ -169,6 +169,18 @@ async function getSingleMatchDetailsFromOpenDota(matchId) {
             reject(e);
         });
     });
+}
+
+// Set unneccessary fields to undefinied, reduce item size
+function removeUnnecessaryData(match) {
+    match.cosmetics = undefined;
+    match.my_word_counts = undefined;
+    match.negative_votes = undefined;
+    match.players.forEach((player) => {
+        player.cosmetics = undefined;
+    });
+
+    return match;
 }
 
 function isMatchWin(match) {
