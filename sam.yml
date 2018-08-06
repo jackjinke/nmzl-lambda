@@ -26,10 +26,10 @@ Parameters:
   GetHeroMetadataLambdaCacheTTL:
     Type: Number
     Default: 3600
-  RefreshPlayersMatchesRateExpression:
+  RefreshPlayersMatchesScheduleExpression:
     Type: String
     Default: 'rate(1 day)'
-  UpdateHeroMetadataRateExpression:
+  UpdateHeroMetadataScheduleExpression:
     Type: String
     Default: 'rate(1 day)'
 
@@ -278,7 +278,7 @@ Resources:
     Type: AWS::Events::Rule
     Properties:
       Description: RefreshPlayersMatchesLambdaScheduledRule
-      ScheduleExpression: !Ref RefreshPlayersMatchesRateExpression
+      ScheduleExpression: !Ref RefreshPlayersMatchesScheduleExpression
       State: ENABLED
       Targets:
       - Arn:
@@ -346,7 +346,7 @@ Resources:
     Type: AWS::Events::Rule
     Properties:
       Description: UpdateHeroMetadataLambdaScheduledRule
-      ScheduleExpression: !Ref UpdateHeroMetadataRateExpression
+      ScheduleExpression: !Ref UpdateHeroMetadataScheduleExpression
       State: ENABLED
       Targets:
       - Arn:

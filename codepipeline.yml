@@ -72,13 +72,13 @@ Parameters:
     Type: Number
     Description: Cache TTL for GetHeroMetadata Lambda function
     Default: 3600
-  RefreshPlayersMatchesRateExpression:
+  RefreshPlayersMatchesScheduleExpression:
     Type: String
-    Description: Rate expression for RefreshPlayersMatches Lambda function
+    Description: Schedule expression for RefreshPlayersMatches Lambda function
     Default: 'rate(1 day)'
-  UpdateHeroMetadataRateExpression:
+  UpdateHeroMetadataScheduleExpression:
     Type: String
-    Description: Rate expression for UpdateHeroMetadata Lambda function
+    Description: Schedule expression for UpdateHeroMetadata Lambda function
     Default: 'rate(1 day)'
 
 Metadata:
@@ -124,11 +124,11 @@ Metadata:
       - Label:
           default: RefreshPlayersMatches Configuration
         Parameters:
-        - RefreshPlayersMatchesRateExpression
+        - RefreshPlayersMatchesScheduleExpression
       - Label:
           default: UpdateHeroMetadata Configuration
         Parameters:
-        - UpdateHeroMetadataRateExpression
+        - UpdateHeroMetadataScheduleExpression
     ParameterLabels:
       GitHubToken:
         default: GitHub OAuth2 Token
@@ -149,21 +149,21 @@ Metadata:
       OpenDotaApiKey:
         default: OpenDota API Key
       GetPlayersLambdaCacheTTL:
-        default: Cache TTL for GetPlayers Lambda function
+        default: Cache TTL
       GetPlayersLambdaSignatureHeroCountThreshold:
-        default: Hero count threshold for calculating signature hero in GetPlayers Lambda function
+        default: Hero count threshold
       GetPlayersLambdaSignatureHeroMatchLimit:
-        default: Match limit for calculating signature hero in GetPlayers Lambda function
+        default: Match limit
       GetBattleCupMatchesLambdaCacheTTL:
-        default: Cache TTL for GetBattleCupMatches Lambda function
+        default: Cache TTL
       GetBattleCupMatchesLambdaTeamPlayerCountThreshold:
-        default: Team player count threshold to mark a matches as a valid Battle Cup match in GetBattleCupMatches Lambda function
+        default: Team player count threshold
       GetHeroMetadataLambdaCacheTTL:
-        default: Cache TTL for GetHeroMetadata Lambda function
-      RefreshPlayersMatchesRateExpression:
-        default: Rate expression for RefreshPlayersMatches Lambda function
-      UpdateHeroMetadataRateExpression:
-        default: Rate expression for UpdateHeroMetadata Lambda function
+        default: Cache TTL
+      RefreshPlayersMatchesScheduleExpression:
+        default: Schedule expression
+      UpdateHeroMetadataScheduleExpression:
+        default: Schedule expression
 
 Resources:
   TransformBucket:
@@ -330,8 +330,8 @@ Resources:
                     "GetBattleCupMatchesLambdaCacheTTL" : "${GetBattleCupMatchesLambdaCacheTTL}",
                     "GetBattleCupMatchesLambdaTeamPlayerCountThreshold" : "${GetBattleCupMatchesLambdaTeamPlayerCountThreshold}",
                     "GetHeroMetadataLambdaCacheTTL" : "${GetHeroMetadataLambdaCacheTTL}",
-                    "RefreshPlayersMatchesRateExpression" : "${RefreshPlayersMatchesRateExpression}",
-                    "UpdateHeroMetadataRateExpression" : "${UpdateHeroMetadataRateExpression}"
+                    "RefreshPlayersMatchesScheduleExpression" : "${RefreshPlayersMatchesScheduleExpression}",
+                    "UpdateHeroMetadataScheduleExpression" : "${UpdateHeroMetadataScheduleExpression}"
                   }
                 RoleArn: !GetAtt
                 - CloudFormationRole
